@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+.venv/
+venv/
+
+# FastAPI outputs
+app/outputs/
+uploads/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+frontend/.env
+
+# macOS
+.DS_Store

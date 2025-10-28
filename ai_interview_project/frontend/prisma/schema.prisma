@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Interview {
+  id             String   @id @default(cuid())
+  candidateId    String
+  language       String   @default("en")
+  status         String   @default("processing")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  verbalScore    Float?
+  nonVerbalScore Float?
+  cheatingScore  Float?
+  finalScore     Float?
+  confidence     Float?
+  summary        String?
+
+  transcript     Transcript?
+  nlp            NLPScore?
+  vision         VisionMetrics?
+}
+
+model Transcript {
+  id          String    @id @default(cuid())
+  interviewId String    @unique
+  text        String
+  segments    Json?
+  createdAt   DateTime  @default(now())
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model NLPScore {
+  id           String    @id @default(cuid())
+  interviewId  String    @unique
+  fluency      Float
+  relevance    Float
+  overall      Float
+  createdAt    DateTime  @default(now())
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model VisionMetrics {
+  id              String    @id @default(cuid())
+  interviewId     String    @unique
+  eyeContactRatio Float
+  phoneDetected   Boolean
+  multiPerson     Boolean
+  cheatingScore   Float
+  createdAt       DateTime  @default(now())
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}

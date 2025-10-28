@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Python
+*.py[cod]
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+
+# Backend artifacts
+ai_interview_project/app/outputs/
+ai_interview_project/uploads/
+
+# Env files
+.env
+.env.*
+ai_interview_project/.env
+ai_interview_project/frontend/.env
+ai_interview_project/frontend/.env.local
+!**/.env.example
+
+# Node / Next.js
+ai_interview_project/frontend/node_modules/
+ai_interview_project/frontend/.next/
