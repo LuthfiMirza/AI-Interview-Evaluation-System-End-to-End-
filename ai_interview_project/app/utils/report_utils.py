@@ -34,7 +34,7 @@ def aggregate_results(
     """Combine subsystem outputs into a unified interview report."""
     verbal_score = float(nlp_result.get("overall_score", 0.0))
     non_verbal_score = 1.0 - float(vision_result.get("cheating_score", 0.0))
-    confidence = _extract_confidence(stt_result)
+    confidence = float(stt_result.get("confidence") or _extract_confidence(stt_result))
     final_score = weighted_average(
         verbal_score,
         non_verbal_score,

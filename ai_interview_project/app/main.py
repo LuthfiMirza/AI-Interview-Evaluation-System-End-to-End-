@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -11,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.interview_routes import router as interview_router
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(dotenv_path=BASE_DIR / ".env", override=True)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),

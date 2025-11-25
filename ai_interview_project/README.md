@@ -49,15 +49,20 @@ ai_interview_project/
 - PostgreSQL 14+ (local instance or Docker)
 - (Optional) Docker Desktop for container workflows
 
+pip install torch==2.5.1+cpu torchvision==0.20.1+cpu torchaudio==2.5.1+cpu --index-url https://download.pytorch.org/whl/cpu
+
 ### 2. Backend Setup (FastAPI)
 ```bash
 cd ai_interview_project
 cp .env.example .env          # adjust DB + storage creds
 python3 -m venv .venv
 source .venv/bin/activate
+.\.venv310\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload 
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --reload
 ```
 
 Key endpoints (Swagger available at `http://localhost:8000/docs`):
@@ -82,6 +87,41 @@ Open `http://localhost:3000` to explore the dashboard. It queries PostgreSQL for
 docker build -t ai-interview-api .
 docker run --rm -p 8000:8000 --env-file .env ai-interview-api
 ```
+
+### 5. Streamlit Prototype (optional)
+```bash
+cd ai_interview_project
+streamlit run streamlit_app.py
+```
+
+Set the FastAPI base URL in the sidebar (defaults to `http://localhost:8000/api`), upload a video, and the page will poll until the report is ready while displaying confidence, summary, and vision metrics.
+
+---
+
+## 🎯 STT MVP & Accuracy Validation
+
+The MVP now focuses on delivering ≥90 % accuracy for English speech-to-text via a noise-robust Whisper pipeline. Key components:
+
+- SoX-based denoising (high-pass, low-pass, companding, normalization) before inference.
+- Whisper `medium.en` checkpoint with beam-search + temperature 0 to reduce hallucinations.
+- Confidence score derived from segment log-probabilities.
+
+### 1. Prepare a labeled dataset
+Create a folder containing audio clips (`.wav`, `.mp3`, `.m4a`) and matching ground-truth transcripts (`sample.wav` + `sample.txt`). Short, clean sentences (~30–90 s) across several speakers work best for smoke tests; expand with noisier data for robustness checks.
+
+### 2. Run the evaluation harness
+```bash
+cd ai_interview_project
+python -m scripts.evaluate_stt --dataset-dir ./data/stt_eval --model-size medium.en --device cuda
+```
+
+- The script prints per-sample accuracy plus aggregate stats (overall, median, min/max).
+- It exits with a non-zero status if overall accuracy drops below 0.90, prompting you to inspect audio quality or adjust preprocessing/model size.
+- Use `--limit N` for quick regression tests on a subset.
+
+### 3. Operational tips
+- For noisy sources, tweak `WHISPER_MODEL_SIZE`/`WHISPER_DEVICE` in `.env` and rerun.
+- Keep evaluation datasets versioned to monitor regressions as you iterate on preprocessing or model checkpoints.
 
 ---
 
