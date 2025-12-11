@@ -27,8 +27,8 @@ def score_transcript(
     transcript: str,
     expected_answer: str,
     scoring_model: Optional[NLPScoringModel] = None,
-    include_summary: bool = True,
-    summarizer_model: str = "sshleifer/distilbart-cnn-12-6",
+    include_summary: bool = False,
+    summarizer_model: str = "facebook/bart-base",
 ) -> Dict[str, Any]:
     """Compute NLP scores and optional summary for a transcript."""
     scoring_model = scoring_model or NLPScoringModel()

@@ -10,16 +10,10 @@ from typing import Dict, Optional
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
 from app.db import session_scope
-from app.models.db_models import (
-    InterviewRecord,
-    NLPScoreRecord,
-    TranscriptRecord,
-    VisionMetricsRecord,
-)
+from app.models.db_models import InterviewRecord, NLPScoreRecord, TranscriptRecord
 from app.utils.audio_utils import extract_audio
 from app.utils.nlp_utils import score_transcript
 from app.utils.report_utils import aggregate_results
-from app.utils.vision_utils import analyze_video
 from app.services import stt_service
 
 LOGGER = logging.getLogger(__name__)
@@ -55,7 +49,6 @@ def _persist_success(
     report: Dict[str, float | str | Dict],
     stt_result: Dict,
     nlp_result: Dict,
-    vision_result: Dict,
 ) -> None:
     with session_scope() as session:
         interview = session.get(InterviewRecord, interview_id)
@@ -66,9 +59,9 @@ def _persist_success(
         interview.candidateId = candidate_identifier
         interview.status = "completed"
         interview.verbalScore = float(report.get("verbal_score") or 0.0)
-        interview.nonVerbalScore = float(report.get("non_verbal_score") or 0.0)
+        interview.nonVerbalScore = None
         interview.finalScore = float(report.get("final_score") or 0.0)
-        interview.cheatingScore = float(vision_result.get("cheating_score") or 0.0)
+        interview.cheatingScore = None
         interview.confidence = float(report.get("confidence") or 0.0)
         interview.summary = report.get("summary") or ""
 
@@ -97,20 +90,6 @@ def _persist_success(
                 overall=float(nlp_result.get("overall_score") or 0.0),
             )
 
-        if interview.vision:
-            interview.vision.eyeContactRatio = float(vision_result.get("eye_contact_ratio") or 0.0)
-            interview.vision.phoneDetected = bool(vision_result.get("phone_detected"))
-            interview.vision.multiPerson = bool(vision_result.get("multi_person"))
-            interview.vision.cheatingScore = float(vision_result.get("cheating_score") or 0.0)
-        else:
-            interview.vision = VisionMetricsRecord(
-                interviewId=interview_id,
-                eyeContactRatio=float(vision_result.get("eye_contact_ratio") or 0.0),
-                phoneDetected=bool(vision_result.get("phone_detected")),
-                multiPerson=bool(vision_result.get("multi_person")),
-                cheatingScore=float(vision_result.get("cheating_score") or 0.0),
-            )
-
 
 def _persist_failure(interview_id: str, candidate_identifier: Optional[str], error_message: str) -> None:
     with session_scope() as session:
@@ -135,15 +114,16 @@ def _process_interview(
         audio_path = Path(extract_audio(str(video_path)))
         stt_result = stt_service.transcribe(str(audio_path))
         transcript_text = stt_result.get("text", "")
+        if not transcript_text.strip():
+            raise ValueError("Transkripsi kosong; pastikan video memiliki suara yang jelas.")
         nlp_result = score_transcript(transcript_text, expected_answer or transcript_text)
-        vision_result = analyze_video(str(video_path))
-        report = aggregate_results(stt_result, nlp_result, vision_result)
+        report = aggregate_results(stt_result, nlp_result)
         RESULT_STORE[interview_id] = {
             "candidate_id": candidate_identifier,
             "status": "completed",
             "report": report,
         }
-        _persist_success(interview_id, candidate_identifier, report, stt_result, nlp_result, vision_result)
+        _persist_success(interview_id, candidate_identifier, report, stt_result, nlp_result)
     except Exception as exc:  # noqa: BLE001
         LOGGER.exception("Failed to process interview %s: %s", interview_id, exc)
         RESULT_STORE[interview_id] = {
@@ -188,8 +168,14 @@ async def upload_interview(
 @router.get("/result/{interview_id}")
 async def get_result(interview_id: str) -> Dict:
     result = RESULT_STORE.get(interview_id)
-    if not result:
-        result = _load_result_from_db(interview_id)
+
+    # If in-memory state is missing or still processing, check the database for fresher status.
+    if not result or result.get("status") == "processing":
+        db_result = _load_result_from_db(interview_id)
+        if db_result:
+            RESULT_STORE[interview_id] = db_result  # cache for subsequent calls
+            result = db_result
+
     if not result:
         raise HTTPException(status_code=404, detail="Interview not found")
     return result
@@ -207,20 +193,12 @@ def _load_result_from_db(interview_id: str) -> Optional[Dict]:
         }
 
         if interview.status == "completed":
-            vision = interview.vision
             transcript = interview.transcript
             report = {
                 "verbal_score": interview.verbalScore,
-                "non_verbal_score": interview.nonVerbalScore,
                 "confidence": interview.confidence,
                 "final_score": interview.finalScore,
                 "summary": interview.summary or "",
-                "vision_metrics": {
-                    "eye_contact_ratio": vision.eyeContactRatio if vision else 0.0,
-                    "phone_detected": bool(vision.phoneDetected) if vision else False,
-                    "multi_person": bool(vision.multiPerson) if vision else False,
-                    "cheating_score": vision.cheatingScore if vision else 0.0,
-                },
                 "transcript": transcript.text if transcript else "",
             }
             response["report"] = report

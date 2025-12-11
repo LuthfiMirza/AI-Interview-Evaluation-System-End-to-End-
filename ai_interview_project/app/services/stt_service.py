@@ -68,6 +68,9 @@ class SpeechToTextService:
             waveform, sample_rate = self._load_audio(str(audio_file))
             waveform = self._apply_fallback_filters(waveform, sample_rate)
 
+        if waveform.numel() == 0:
+            raise ValueError("Audio contains no samples after extraction. Please provide a video with audible speech.")
+
         if sample_rate != TARGET_SAMPLE_RATE:
             LOGGER.debug("Resampling audio from %s Hz to %s Hz", sample_rate, TARGET_SAMPLE_RATE)
             resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=TARGET_SAMPLE_RATE)

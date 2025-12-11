@@ -32,8 +32,11 @@ def _confidence_from_segments(segments: Iterable[Dict[str, Any]]) -> float:
         logprobs.append(logprob)
     if not logprobs:
         return 0.0
+    # Clamp logprobs, exponentiate, then gently boost with sqrt to keep the scale readable.
     probs = [math.exp(max(min(lp, 0.0), -5.0)) for lp in logprobs]
-    return round(sum(probs) / len(probs), 3)
+    boosted = [math.sqrt(p) for p in probs]
+    avg = sum(boosted) / len(boosted)
+    return round(min(1.0, max(0.0, avg)), 3)
 
 
 class WhisperTranscriber:

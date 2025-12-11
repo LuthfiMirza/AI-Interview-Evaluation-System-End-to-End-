@@ -1,6 +1,6 @@
 # AI Interview Evaluation System (End-to-End)
 
-Automated evaluation pipeline that ingests recorded interview videos, transcribes speech with Whisper, analyses content with Transformer models, observes non-verbal behaviour using YOLOv8 + Mediapipe, detects cheating cues, and consolidates the findings into an HR-friendly dashboard.
+Automated evaluation pipeline that ingests recorded interview videos, transcribes speech with Whisper, analyses content with Transformer models, and consolidates the findings into an HR-friendly dashboard. Vision-based cheating detection is currently disabled to focus on STT + NLP quality.
 
 ---
 
@@ -11,7 +11,7 @@ Automated evaluation pipeline that ingests recorded interview videos, transcribe
 | Backend / API      | FastAPI, Uvicorn, SQLAlchemy (planned)               | Async job orchestration & REST endpoints |
 | Speech-to-Text     | OpenAI Whisper (local)                               | 16 kHz mono audio pipeline |
 | NLP Scoring        | HuggingFace Transformers, Sentence Transformers      | Fluency, relevance, summarisation |
-| Vision / Cheating  | Ultralytics YOLOv8, Mediapipe, OpenCV                | Eye contact, phone detection, multi-person |
+| Vision / Cheating  | (Temporarily disabled)                               | Focus is on speech + NLP only |
 | Storage            | PostgreSQL, MinIO/S3 (future)                        | Transcripts, scores, raw media |
 | Dashboard          | Next.js 14 (App Router), Prisma ORM, React           | Real-time result visualisation |
 | Tooling            | Docker, ffmpeg, python-dotenv, Typescript, ESLint    | Deployability & DX |
@@ -94,11 +94,16 @@ cd ai_interview_project
 streamlit run streamlit_app.py
 ```
 
-Set the FastAPI base URL in the sidebar (defaults to `http://localhost:8000/api`), upload a video, and the page will poll until the report is ready while displaying confidence, summary, and vision metrics.
+Set the FastAPI base URL in the sidebar (defaults to `http://localhost:8000/api`), upload a video, and the page will poll until the report is ready while displaying confidence and summary.
 
 ---
 
 ## 🎯 STT MVP & Accuracy Validation
+
+### Performance tips (quality vs speed)
+- Default `WHISPER_MODEL_SIZE=base.en` in `.env` balances accuracy and size; use `medium.en` for higher accuracy (slower) or `tiny.en` for fastest download.
+- If you have a GPU, set `WHISPER_DEVICE=cuda` to accelerate Whisper.
+- Summaries are disabled by default to reduce NLP latency; enable by calling `score_transcript(..., include_summary=True)` if needed.
 
 The MVP now focuses on delivering ≥90 % accuracy for English speech-to-text via a noise-robust Whisper pipeline. Key components:
 
@@ -131,9 +136,8 @@ python -m scripts.evaluate_stt --dataset-dir ./data/stt_eval --model-size medium
 2. **Audio Extraction** – ffmpeg converts to 16 kHz mono WAV (`audio_utils.extract_audio`).
 3. **Speech-to-Text** – Whisper generates transcription segments + confidences.
 4. **NLP Scoring** – transformer embeddings evaluate relevance vs. expected answer, BERT classifies fluency, summariser creates HR digest.
-5. **Vision Analysis** – YOLOv8 detects people/phones, Mediapipe estimates eye contact; metrics converted into cheating score.
-6. **Aggregation Layer** – weighted blend of verbal/non-verbal scores plus metadata; stored and exposed via API.
-7. **Dashboard** – Prisma pulls scores for an overview table; future work includes charts and drill-downs.
+5. **Aggregation Layer** – blend of verbal scores plus metadata; stored and exposed via API.
+6. **Dashboard** – Prisma pulls scores for an overview table; future work includes charts and drill-downs.
 
 ---
 
@@ -157,7 +161,6 @@ Store secrets in `.env` (backend) and `frontend/.env` (for local development); n
 - [ ] Apply Prisma migrations whenever the schema changes.
 - [ ] Exercise the upload & result endpoints for regression testing.
 - [ ] Record and attach sample interview videos for load testing.
-- [ ] Confirm YOLO model weights (`yolov8n.pt` by default) are reachable.
 - [ ] Configure logging and storage settings before production deployment.
 
 ---
@@ -183,7 +186,7 @@ Store secrets in `.env` (backend) and `frontend/.env` (for local development); n
 
 ## 📄 License
 
-This project inherits the license of the hosting repository. Ensure compliance with Whisper, YOLOv8, and HuggingFace model licenses when redistributing model weights or building commercial solutions.
+This project inherits the license of the hosting repository. Ensure compliance with Whisper and HuggingFace model licenses when redistributing model weights or building commercial solutions.
 
 ---
 

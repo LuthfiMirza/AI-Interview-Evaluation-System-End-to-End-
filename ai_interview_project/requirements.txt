@@ -4,9 +4,10 @@ python-multipart>=0.0.9
 python-dotenv>=1.0.1
 ffmpeg-python>=0.2.0
 openai-whisper>=20231117
-transformers>=4.38.0
-torch>=2.2.0
-torchaudio>=2.2.0
+# Transformers 4.57+ requires torch>=2.6; pin to a compatible version with torch 2.2.x
+transformers==4.44.2
+torch==2.2.2
+torchaudio==2.2.2
 sentencepiece>=0.1.99
 accelerate>=0.27.0
 mediapipe>=0.10.10
@@ -24,3 +25,5 @@ httpx>=0.26.0
 loguru>=0.7.2
 jiwer>=3.0.0
 soundfile>=0.12.1
+datasets[audio]>=2.19.0
+evaluate>=0.4.0

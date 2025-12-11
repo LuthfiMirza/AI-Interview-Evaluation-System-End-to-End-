@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
@@ -23,6 +24,7 @@ if not DATABASE_URL:
 
 
 url = make_url(DATABASE_URL)
+LOGGER = logging.getLogger(__name__)
 schema = url.query.get("schema")
 if schema:
     query = dict(url.query)
@@ -43,6 +45,12 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 class Base(DeclarativeBase):
     """Declarative base for ORM models."""
+
+
+def init_db() -> None:
+    """Create database tables if they do not already exist."""
+    Base.metadata.create_all(bind=engine)
+    LOGGER.info("Database schema ensured on %s", url.render_as_string(hide_password=True))
 
 
 @contextmanager

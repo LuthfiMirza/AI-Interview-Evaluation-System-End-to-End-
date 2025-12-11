@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import subprocess
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -35,21 +36,37 @@ def extract_audio(video_path: str, output_dir: Optional[Path] = None) -> str:
 
     LOGGER.info("Extracting audio from %s to %s", video_file, audio_path)
     try:
-        (
-            ffmpeg.input(str(video_file))
-            .output(
-                str(audio_path),
-                acodec="pcm_s16le",
-                ac=1,
-                ar=16000,
-                format="wav",
-                loglevel="error",
-            )
-            .overwrite_output()
-            .run(quiet=True)
+        cmd = [
+            "ffmpeg",
+            "-nostdin",
+            "-y",
+            "-i",
+            str(video_file),
+            "-f",
+            "wav",
+            "-ac",
+            "1",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "16000",
+            str(audio_path),
+        ]
+        subprocess.run(
+            cmd,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=180,
         )
-    except ffmpeg.Error as exc:
+    except subprocess.TimeoutExpired as exc:
+        LOGGER.exception("ffmpeg timed out extracting audio from %s", video_file)
+        raise RuntimeError("Audio extraction timed out") from exc
+    except (subprocess.CalledProcessError, ffmpeg.Error) as exc:
         LOGGER.exception("ffmpeg failed to extract audio: %s", exc)
         raise RuntimeError("Audio extraction failed") from exc
+
+    if audio_path.stat().st_size == 0:
+        raise RuntimeError("Audio extraction produced an empty file. Ensure the video has an audio track.")
 
     return str(audio_path)
