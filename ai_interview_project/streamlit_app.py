@@ -177,7 +177,7 @@ def fetch_result(api_base: str, interview_id: str) -> Dict[str, Any]:
         return response.json()
 
 
-def poll_until_complete(api_base: str, interview_id: str, timeout: int = 420, interval: int = 5) -> Dict[str, Any]:
+def poll_until_complete(api_base: str, interview_id: str, timeout: int = 900, interval: int = 5) -> Dict[str, Any]:
     start = time.monotonic()
     with st.spinner("Processing interview…"):
         while True:
@@ -391,6 +391,14 @@ def main() -> None:
 
     api_base = st.sidebar.text_input("FastAPI Base URL", _default_api_base())
     poll_enabled = st.sidebar.checkbox("Auto-poll result", value=True)
+    poll_timeout = st.sidebar.number_input(
+        "Auto-poll timeout (seconds)",
+        min_value=60,
+        max_value=1800,
+        step=60,
+        value=900,
+        help="Perpanjang jika unduhan model pertama kali memakan waktu lama.",
+    )
 
     # Sidebar overrides for role templates
     with st.sidebar.expander("Role Templates / Overrides", expanded=False):
@@ -472,8 +480,11 @@ def main() -> None:
             help="Maximum recommended duration 5 minutes.",
         )
         candidate_id = st.text_input("Candidate ID (optional)")
+        # Keep the expected answer pre-filled with the active role template even after form clears.
+        expected_prefill = st.session_state.get("expected_answer_text", "")
         expected_answer = st.text_area(
             "Expected Answer / Prompt",
+            value=expected_prefill,
             key="expected_answer_text",
             help="Digunakan untuk menghitung relevansi jawaban terhadap kisi-kisi role.",
         )
@@ -504,7 +515,7 @@ def main() -> None:
                 }
                 st.success(f"Job queued successfully! Interview ID: {interview_id}")
                 if poll_enabled:
-                    result = poll_until_complete(api_base, interview_id)
+                    result = poll_until_complete(api_base, interview_id, timeout=int(poll_timeout))
                     meta = st.session_state.get("meta", {}).get(interview_id)
                     render_report(result, interview_id=interview_id, meta=meta)
             except httpx.HTTPStatusError as exc:
