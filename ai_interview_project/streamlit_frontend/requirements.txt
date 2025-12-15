@@ -1,3 +1,9 @@
 streamlit>=1.31.0
 httpx>=0.26.0
 python-dotenv>=1.0.1
+
+# local inference (Whisper + deps)
+openai-whisper
+torch==2.2.2
+ffmpeg-python>=0.2.0
+numpy>=1.26.0
