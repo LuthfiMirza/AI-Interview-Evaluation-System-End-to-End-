@@ -165,12 +165,14 @@ def _get_template(role: str, level: str, use_overrides: bool = True) -> Tuple[st
 
 
 def _default_api_base() -> str:
-    # Use env first, then Streamlit secrets, fallback to localhost for local dev
-    return (
-        os.getenv("NEXT_PUBLIC_API_BASE_URL")
-        or (getattr(st, "secrets", {}) or {}).get("NEXT_PUBLIC_API_BASE_URL")
-        or "http://localhost:8000/api"
-    )
+    # Use env first, then Streamlit secrets (if available), fallback to localhost for local dev.
+    env_val = os.getenv("NEXT_PUBLIC_API_BASE_URL")
+    if env_val:
+        return env_val
+    try:
+        return st.secrets.get("NEXT_PUBLIC_API_BASE_URL", "http://localhost:8000/api")  # type: ignore[attr-defined]
+    except Exception:
+        return "http://localhost:8000/api"
 
 
 @st.cache_resource(show_spinner=False)
