@@ -17,7 +17,6 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(dotenv_path=BASE_DIR / ".env", override=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-print("🔥🔥 DEBUG: DATABASE_URL loaded from env =", DATABASE_URL)
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL environment variable is not set.")

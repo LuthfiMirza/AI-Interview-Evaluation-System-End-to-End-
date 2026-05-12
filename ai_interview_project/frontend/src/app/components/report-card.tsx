@@ -51,11 +51,11 @@ export function ReportCard({ interview }: ReportCardProps) {
         />
         <Metric
           label="Non-Verbal"
-          value={formatNumber(interview.nonVerbalScore)}
+          value={formatNumber(interview.nonVerbalScore, 2, "Planned")}
         />
         <Metric
           label="Cheating Risk"
-          value={formatNumber(interview.cheatingScore)}
+          value={formatNumber(interview.cheatingScore, 2, "Planned")}
         />
         <Metric
           label="Confidence"
@@ -91,8 +91,8 @@ export function ReportCard({ interview }: ReportCardProps) {
             cues observed here.
           </li>
           <li>
-            <strong>Risks:</strong> Review cheating score & non-verbal anomalies
-            for manual verification.
+            <strong>Risks:</strong> Review low confidence or weak relevance for
+            manual follow-up.
           </li>
           <li>
             <strong>Next steps:</strong> Plan follow-up rounds or offer issuance

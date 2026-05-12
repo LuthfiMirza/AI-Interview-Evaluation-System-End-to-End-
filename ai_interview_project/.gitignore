@@ -1,25 +1,39 @@
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
+.qodo/
+
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .python-version
-.venv/
+.venv*/
 venv/
 
-# FastAPI outputs
-app/outputs/
-uploads/
-
-# Environment
+# Environment / secrets
 .env
 .env.*
 !.env.example
 
 # Node / Next.js
 frontend/.next/
+frontend/out/
 frontend/node_modules/
 frontend/.env.local
 frontend/.env
 
-# macOS
-.DS_Store
+# Local runtime artifacts
+uploads/
+outputs/
+data/*
+!data/.gitkeep
+*.pt
+*.onnx
+
+# Logs
+*.log

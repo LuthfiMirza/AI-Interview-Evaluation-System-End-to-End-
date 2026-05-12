@@ -1,25 +1,36 @@
+# API
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
 python-dotenv>=1.0.1
+
+# Audio + speech-to-text
 ffmpeg-python>=0.2.0
 openai-whisper>=20231117
-# Transformers 4.57+ requires torch>=2.6; pin to a compatible version with torch 2.2.x
-transformers==4.44.2
 torch==2.2.2
 torchaudio==2.2.2
+
+# NLP scoring
+# Transformers 4.57+ requires torch>=2.6; keep this pin aligned with torch 2.2.x.
+transformers==4.44.2
 sentencepiece>=0.1.99
 accelerate>=0.27.0
-mediapipe>=0.10.10
-ultralytics>=8.1.0
-opencv-python>=4.9.0
 numpy>=1.26.0
 pandas>=2.2.0
+
+# Persistence
 sqlalchemy>=2.0.25
 asyncpg>=0.29.0
 psycopg2-binary>=2.9.9
+
+# Optional vision/object-storage modules not active in the main pipeline yet
+mediapipe>=0.10.10
+ultralytics>=8.1.0
+opencv-python>=4.9.0
 minio>=7.2.7
 boto3>=1.34.0
+
+# Optional Streamlit prototype + evaluation scripts
 streamlit>=1.31.0
 httpx>=0.26.0
 loguru>=0.7.2

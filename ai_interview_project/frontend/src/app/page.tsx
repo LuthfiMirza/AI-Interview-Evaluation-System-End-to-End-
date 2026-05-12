@@ -59,8 +59,8 @@ export default async function DashboardPage() {
         <p className="step-label">AI Interview Assessment – MVP</p>
         <h1>AI Interview Assessment – MVP</h1>
         <p>
-          Upload video interview → Transcribe (EN/ID) → Optional analysis
-          (diarization, non-verbal, cheating) → Download report.
+          Upload interview video → Extract audio → Transcribe speech → Score
+          verbal response quality → Review the latest report.
         </p>
         <p className="hero-subtext">
           Backend docs:{" "}
@@ -87,8 +87,8 @@ export default async function DashboardPage() {
             <li>Extract & denoise audio, resample to 16 kHz mono.</li>
             <li>Whisper STT (medium.en) + confidence scoring.</li>
             <li>
-              NLP scoring (relevance, fluency, summary) + vision metrics (eye
-              contact, cheating cues).
+              NLP scoring for relevance, fluency, summary, and final verbal
+              score.
             </li>
             <li>Aggregate into a unified report and persist via PostgreSQL.</li>
           </ol>
@@ -142,8 +142,8 @@ export default async function DashboardPage() {
                     </td>
                     <td>{row.finalScore?.toFixed(2) ?? "—"}</td>
                     <td>{row.verbalScore?.toFixed(2) ?? "—"}</td>
-                    <td>{row.nonVerbalScore?.toFixed(2) ?? "—"}</td>
-                    <td>{row.cheatingScore?.toFixed(2) ?? "—"}</td>
+                    <td>{row.nonVerbalScore?.toFixed(2) ?? "Planned"}</td>
+                    <td>{row.cheatingScore?.toFixed(2) ?? "Planned"}</td>
                     <td>{row.confidence?.toFixed(3) ?? "—"}</td>
                     <td>
                       {formatDistanceToNow(row.updatedAt, { addSuffix: true })}

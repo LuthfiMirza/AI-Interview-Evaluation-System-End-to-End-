@@ -1,11 +1,15 @@
+# Optional Streamlit UI dependencies.
+# Install from the repository root if you want to reuse the backend package imports.
 --extra-index-url https://download.pytorch.org/whl/cpu
+
 streamlit>=1.31.0
 httpx>=0.26.0
 python-dotenv>=1.0.1
 
-# local inference (Whisper + deps)
-openai-whisper
-torch==2.9.1
+# Local inference dependencies aligned with the backend requirements.
+openai-whisper>=20231117
+torch==2.2.2
+torchaudio==2.2.2
 ffmpeg-python>=0.2.0
 numpy>=1.26.0
 transformers==4.44.2
