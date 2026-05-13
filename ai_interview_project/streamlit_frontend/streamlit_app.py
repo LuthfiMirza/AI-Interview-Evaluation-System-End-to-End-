@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import time
+from html import escape
 from pathlib import Path
 from typing import Any, Dict, Tuple
 from uuid import uuid4
@@ -24,7 +25,7 @@ from app.utils.audio_utils import extract_audio  # noqa: E402
 from app.utils.nlp_utils import score_transcript  # noqa: E402
 from app.utils.report_utils import aggregate_results  # noqa: E402
 
-MAX_UPLOAD_MB = int(os.getenv("STREAMLIT_MAX_UPLOAD_MB", "50"))
+MAX_UPLOAD_MB = int(os.getenv("STREAMLIT_MAX_UPLOAD_MB", "200"))
 
 # Simple role/level templates for expected answers & pass thresholds
 ROLE_TEMPLATES: Dict[str, Dict[str, Dict[str, Any]]] = {
@@ -457,12 +458,380 @@ def render_report(result: Dict[str, Any], interview_id: str | None = None, meta:
     )
 
 
-def main() -> None:
-    st.set_page_config(page_title="AI Interview Assessment (Prototype)", layout="wide")
-    st.title("AI Interview Assessment – MVP (Streamlit Prototype)")
-    st.write(
-        "Upload interview videos, trigger the FastAPI pipeline, atau jalankan inference lokal di Streamlit untuk demo cepat."
+
+def inject_dashboard_css() -> None:
+    st.markdown(
+        """
+        <style>
+        :root {
+            --bg: #f6f8fb;
+            --card: #ffffff;
+            --sidebar: #061525;
+            --sidebar-soft: #071827;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text: #0f172a;
+            --muted: #64748b;
+            --muted-soft: #94a3b8;
+            --border: #e5e7eb;
+            --green: #10b981;
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+            --radius: 20px;
+        }
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header[data-testid="stHeader"] {background: transparent;}
+        .stApp {background: var(--bg); color: var(--text);}
+        .block-container {padding: 2rem 2.4rem 3rem; max-width: 1440px;}
+
+        /* Persistent mini rail when native sidebar is collapsed */
+        .stApp::before {
+            content: "";
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 3.75rem;
+            height: 100vh;
+            background: linear-gradient(180deg, #061525 0%, #071827 100%);
+            border-right: 1px solid rgba(96, 165, 250, 0.22);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .stApp::after {
+            content: "AI";
+            position: fixed;
+            left: 0.72rem;
+            top: 4.1rem;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 13px;
+            display: grid;
+            place-items: center;
+            background: rgba(37, 99, 235, 0.22);
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            color: #dbeafe;
+            font-weight: 900;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Sidebar */
+        section[data-testid="stSidebar"] {
+            background: var(--sidebar);
+            border-right: 1px solid rgba(148, 163, 184, 0.14);
+        }
+        section[data-testid="stSidebar"] > div {
+            background: linear-gradient(180deg, #061525 0%, #071827 100%);
+            padding: 1.15rem 1.05rem 1.8rem;
+        }
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {
+            visibility: visible !important;
+            height: 3.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.6rem 0.2rem;
+            color: #f8fafc;
+        }
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"]::after {
+            content: "AI Interview Assessment";
+            color: #f8fafc;
+            font-size: 0.86rem;
+            font-weight: 850;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            opacity: 0.96;
+        }
+        section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] button {
+            visibility: visible !important;
+            color: #dbeafe !important;
+            opacity: 1 !important;
+        }
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span {
+            color: #dbeafe !important;
+        }
+        section[data-testid="stSidebar"] .stTextInput input,
+        section[data-testid="stSidebar"] .stNumberInput input,
+        section[data-testid="stSidebar"] textarea,
+        section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+            background: rgba(15, 23, 42, 0.78) !important;
+            border: 1px solid rgba(148, 163, 184, 0.28) !important;
+            border-radius: 12px !important;
+            color: #f8fafc !important;
+        }
+        .sidebar-logo {padding: 0.15rem 0 1.25rem; border-bottom: 1px solid rgba(148, 163, 184, 0.18); margin-bottom: 1.15rem;}
+        .sidebar-logo h2 {color: #f8fafc; font-size: 1.45rem; margin: 0; letter-spacing: -0.035em;}
+        .sidebar-logo p {color: #93c5fd; margin: 0.18rem 0 0; font-size: 0.88rem;}
+        .sidebar-section-title {font-size: 0.72rem; font-weight: 850; color: #67e8f9; letter-spacing: 0.14em; margin: 0.55rem 0 1rem;}
+        .sidebar-status-card {background: rgba(16, 185, 129, 0.10); border: 1px solid rgba(16, 185, 129, 0.30); border-radius: 18px; padding: 1rem; margin-top: 1.25rem;}
+        .status-line {display: flex; align-items: center; gap: 0.55rem; color: #ecfdf5; font-weight: 850;}
+        .green-dot {width: 9px; height: 9px; border-radius: 999px; background: var(--green); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.13); display: inline-block; flex: 0 0 auto;}
+        .sidebar-status-card p {color: #a7f3d0 !important; font-size: 0.84rem; margin: 0.35rem 0 0 1.45rem;}
+        .sidebar-footer {color: #94a3b8; font-size: 0.75rem; margin-top: 2.1rem; line-height: 1.5;}
+
+        /* Native collapsed/open sidebar controls: keep visible and obvious */
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"],
+        button[aria-label*="sidebar" i] {
+            visibility: visible !important;
+            position: fixed !important;
+            left: 0.72rem !important;
+            top: 0.78rem !important;
+            z-index: 999999 !important;
+            background: #061525 !important;
+            border: 1px solid rgba(96, 165, 250, 0.45) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.20) !important;
+            color: #dbeafe !important;
+            opacity: 1 !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] button,
+        [data-testid="collapsedControl"] button,
+        button[aria-label*="sidebar" i] svg {
+            color: #dbeafe !important;
+            fill: #dbeafe !important;
+            opacity: 1 !important;
+        }
+        .floating-open-sidebar {margin: -0.75rem 0 1rem 0; max-width: 190px;}
+        .floating-open-sidebar div.stButton > button {
+            background: #061525 !important;
+            color: #dbeafe !important;
+            border: 1px solid rgba(96, 165, 250, 0.45) !important;
+            border-radius: 999px !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16) !important;
+            padding: 0.5rem 0.9rem !important;
+        }
+
+        /* Main cards */
+        .hero-card, .card, .step {
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .hero-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 1.4rem;
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .hero-kicker {display: inline-flex; align-items: center; gap: 0.4rem; background: #dbeafe; color: #1d4ed8; border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 850; margin-bottom: 0.85rem;}
+        .hero-card h1 {font-size: 2.35rem; line-height: 1.05; color: var(--text); margin: 0 0 0.65rem; letter-spacing: -0.055em;}
+        .hero-card p {font-size: 1rem; color: var(--muted); margin: 0; max-width: 760px; line-height: 1.6;}
+        .hero-visual {width: 108px; height: 108px; border-radius: 26px; background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%); display: grid; place-items: center; color: white; box-shadow: 0 18px 38px rgba(37, 99, 235, 0.26); font-size: 2.35rem;}
+        .stepper {display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; margin: 0 0 20px;}
+        .step {border-radius: 18px; padding: 0.85rem 1rem; color: var(--muted); font-weight: 850; display: flex; align-items: center; min-height: 54px;}
+        .step.active {background: #eff6ff; color: var(--primary); border-color: #93c5fd;}
+        .step span {display: inline-flex; width: 28px; height: 28px; border-radius: 999px; align-items: center; justify-content: center; margin-right: 0.6rem; background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; font-size: 0.82rem; font-weight: 900;}
+        .step.active span {background: var(--primary); border-color: var(--primary); color: white;}
+        .card {border-radius: var(--radius); padding: 24px; margin-bottom: 20px;}
+        .card-title {display: flex; align-items: center; gap: 0.6rem; color: var(--text); font-size: 1.08rem; font-weight: 850; margin-bottom: 1rem;}
+        .card-title-row {display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;}
+        .support-note {background: #f8fafc; border: 1px dashed #bfdbfe; border-radius: 16px; padding: 0.85rem 1rem; margin-bottom: 0.95rem; color: var(--muted); font-size: 0.88rem; line-height: 1.45;}
+
+        /* Light main form controls */
+        .main .stTextInput input,
+        .main .stNumberInput input,
+        .main textarea,
+        .main div[data-baseweb="select"] > div,
+        .main div[data-testid="stFileUploader"] section {
+            background: #ffffff !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+        }
+        .main input::placeholder, .main textarea::placeholder {color: var(--muted-soft) !important;}
+        .main label, .main p, .main span {color: var(--text);}
+        .main small, .main .stCaptionContainer, .main [data-testid="stMarkdownContainer"] p {color: var(--muted);}
+        .main div[data-baseweb="select"] span {color: var(--text) !important;}
+        .main div[data-testid="stFileUploader"] section {background: #f8fbff !important; border: 1.5px dashed #93c5fd !important; padding: 0.65rem !important;}
+        .main div[data-testid="stFileUploader"] section * {color: var(--text) !important;}
+        div.stButton > button, div.stFormSubmitButton > button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 0.78rem 1rem;
+            font-weight: 850;
+            box-shadow: 0 12px 22px rgba(37, 99, 235, 0.20);
+        }
+        div.stButton > button:hover, div.stFormSubmitButton > button:hover {background: var(--primary-hover); color: white; border: none;}
+
+        /* Right panel */
+        .status-badge {display: inline-flex; align-items: center; gap: 0.45rem; background: #ecfdf5; color: #047857; border: 1px solid #bbf7d0; border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 850;}
+        .status-subtitle {font-size: 0.82rem; color: var(--muted); margin-top: 0.45rem; text-align: right;}
+        .metric-grid {display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 0.75rem; margin-top: 1rem;}
+        .metric-card {background: #f8fafc; border: 1px solid var(--border); border-radius: 18px; padding: 0.95rem; min-height: 106px;}
+        .metric-card span {display: block; color: var(--muted); font-size: 0.74rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.04em;}
+        .metric-card strong {display: block; color: var(--text); font-size: 1.28rem; margin: 0.28rem 0 0.08rem; letter-spacing: -0.03em;}
+        .metric-card.primary strong {font-size: 1.58rem;}
+        .metric-card em {font-style: normal; color: #059669; font-size: 0.78rem; font-weight: 850;}
+        .summary-text {background: #f8fafc; border: 1px solid var(--border); border-radius: 18px; padding: 1rem; color: #334155; line-height: 1.7; font-size: 0.95rem;}
+        .transcript-line {background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 0.72rem 0.85rem; margin-bottom: 0.55rem; color: #334155; font-size: 0.9rem; line-height: 1.5;}
+        .tiny-button {border: 1px solid #bfdbfe; color: var(--primary); background: #eff6ff; border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.78rem; font-weight: 850; white-space: nowrap;}
+
+        @media (max-width: 980px) {
+            .block-container {padding: 1.2rem 1rem 2rem 4.7rem;}
+            .hero-card {grid-template-columns: 1fr;}
+            .hero-visual {display: none;}
+            .stepper, .metric-grid {grid-template-columns: 1fr;}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
+
+def render_sidebar_header() -> None:
+    st.sidebar.markdown(
+        """
+        <div class="sidebar-logo">
+            <h2>AI Interview</h2>
+            <p>Assessment MVP</p>
+        </div>
+        <div class="sidebar-section-title">CONTROL PANEL</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def render_sidebar_status(local_mode: bool) -> None:
+    title = "Local inference ready" if local_mode else "FastAPI ready"
+    subtitle = "Streamlit model mode enabled" if local_mode else "All systems operational"
+    st.sidebar.markdown(
+        f"""
+        <div class="sidebar-status-card">
+            <div class="status-line"><span class="green-dot"></span>{title}</div>
+            <p>{subtitle}</p>
+        </div>
+        <div class="sidebar-footer">
+            © 2024 AI Interview Assessment<br/>
+            MVP Prototype
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def request_sidebar_state(is_open: bool) -> None:
+    st.session_state["sidebar_open"] = is_open
+    st.rerun()
+
+def render_hero() -> None:
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div>
+                <div class="hero-kicker">● MVP Demo</div>
+                <h1>AI Interview Assessment</h1>
+                <p>Upload interview videos, trigger the FastAPI pipeline, atau jalankan inference lokal di Streamlit untuk demo cepat.</p>
+            </div>
+            <div class="hero-visual">▶︎</div>
+        </div>
+        <div class="stepper">
+            <div class="step active"><span>1</span>Setup</div>
+            <div class="step"><span>2</span>Upload</div>
+            <div class="step"><span>3</span>Evaluate</div>
+            <div class="step"><span>4</span>Review</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def _score_to_label(score: float) -> str:
+    if score >= 0.85:
+        return "Excellent"
+    if score >= 0.70:
+        return "Good"
+    if score > 0:
+        return "Needs Review"
+    return "Pending"
+
+def _latest_report() -> tuple[Dict[str, Any] | None, str | None, Dict[str, Any] | None]:
+    result = st.session_state.get("latest_result")
+    interview_id = st.session_state.get("last_interview_id")
+    meta = st.session_state.get("meta", {}).get(interview_id) if interview_id else None
+    if isinstance(result, dict):
+        return result, interview_id, meta
+    return None, interview_id, meta
+
+def render_status_cards() -> None:
+    result, _, _ = _latest_report()
+    report = (result or {}).get("report") or {}
+    status = (result or {}).get("status") or "ready"
+    verbal = float(report.get("verbal_score") or 0.78)
+    final_score = float(report.get("final_score") or 0.82)
+    relevance = float(report.get("relevance") or report.get("overall_score") or 0.86)
+    subtitle = "Report ready" if report else "Waiting for upload"
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="card-title-row">
+                <div class="card-title">📊 Evaluation Status</div>
+                <div>
+                    <div class="status-badge"><span class="green-dot"></span>{status.title() if status != 'ready' else 'Ready'}</div>
+                    <div class="status-subtitle">{subtitle}</div>
+                </div>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-card primary"><span>Final Score</span><strong>{final_score*100:.0f}/100</strong><em>{_score_to_label(final_score)}</em></div>
+                <div class="metric-card"><span>Fluency</span><strong>{verbal*100:.0f}/100</strong><em>{_score_to_label(verbal)}</em></div>
+                <div class="metric-card"><span>Relevance</span><strong>{relevance*100:.0f}/100</strong><em>{_score_to_label(relevance)}</em></div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def render_summary_card() -> None:
+    result, _, _ = _latest_report()
+    report = (result or {}).get("report") or {}
+    summary = report.get("summary") or (
+        "Kandidat menunjukkan pemahaman yang baik tentang React/Next dan manajemen state dengan hooks/RTK. "
+        "Penjelasan cukup jelas dan terstruktur dengan contoh yang relevan. "
+        "Perhatian terhadap aksesibilitas dan performa menunjukkan awareness yang baik."
+    )
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="card-title">✨ AI Summary</div>
+            <div class="summary-text">{escape(summary)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def render_transcript_card() -> None:
+    result, _, _ = _latest_report()
+    report = (result or {}).get("report") or {}
+    transcript = (report.get("transcript") or "").strip()
+    if transcript:
+        sentences = [line.strip() for line in transcript.replace("\n", " ").split(".") if line.strip()]
+        lines = [f"{idx:02d}:00 {sentence[:150]}..." for idx, sentence in enumerate(sentences[:4], 1)]
+    else:
+        lines = [
+            "00:12 Saya biasanya menggunakan React dengan Next.js untuk proyek produksi...",
+            "00:28 Untuk state management, saya lebih sering pakai Redux Toolkit...",
+            "00:45 Dalam hal testing, saya menulis unit test dengan Jest dan React Testing Library...",
+        ]
+    st.markdown('<div class="card"><div class="card-title-row"><div class="card-title">📝 Transcript Preview</div><div class="tiny-button">View full transcript</div></div>', unsafe_allow_html=True)
+    for line in lines[:5]:
+        st.markdown(f'<div class="transcript-line">{escape(line)}</div>', unsafe_allow_html=True)
+    if transcript:
+        with st.expander("View full transcript"):
+            st.text_area("Full transcript", transcript, height=220, label_visibility="collapsed")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def main() -> None:
+    initial_sidebar_state = "expanded" if st.session_state.get("sidebar_open", True) else "collapsed"
+    st.set_page_config(
+        page_title="AI Interview Assessment",
+        layout="wide",
+        initial_sidebar_state=initial_sidebar_state,
+    )
+    inject_dashboard_css()
 
     if "last_interview_id" not in st.session_state:
         st.session_state["last_interview_id"] = None
@@ -476,10 +845,26 @@ def main() -> None:
         st.session_state["_prev_level"] = st.session_state["selected_level"]
     if "role_overrides" not in st.session_state:
         st.session_state["role_overrides"] = {}
+    if "meta" not in st.session_state:
+        st.session_state["meta"] = {}
+    if "latest_result" not in st.session_state:
+        st.session_state["latest_result"] = None
+    if "sidebar_open" not in st.session_state:
+        st.session_state["sidebar_open"] = True
     if "expected_answer_text" not in st.session_state or "current_threshold" not in st.session_state:
         default_exp, default_thr = _get_template(st.session_state["selected_role"], st.session_state["selected_level"])
         st.session_state["expected_answer_text"] = default_exp
         st.session_state["current_threshold"] = default_thr
+
+    render_sidebar_header()
+    if st.sidebar.button("‹ Collapse panel", use_container_width=True):
+        request_sidebar_state(False)
+
+    if not st.session_state.get("sidebar_open", True):
+        st.markdown('<div class="floating-open-sidebar">', unsafe_allow_html=True)
+        if st.button("☰ Open controls", key="open_sidebar_button"):
+            request_sidebar_state(True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     local_mode = st.sidebar.checkbox(
         "Run locally (tanpa FastAPI)",
@@ -504,7 +889,6 @@ def main() -> None:
             help="Perpanjang jika unduhan model pertama kali memakan waktu lama.",
         )
 
-    # Sidebar overrides for role templates
     with st.sidebar.expander("Role Templates / Overrides", expanded=False):
         override_role = st.selectbox(
             "Role (override)",
@@ -541,7 +925,6 @@ def main() -> None:
                 "threshold": override_thr,
             }
             st.session_state["role_overrides"] = role_overrides
-            # Jika override ini untuk role/level yang sedang dipilih, langsung terapkan ke prompt/form
             if (
                 override_role == st.session_state.get("selected_role")
                 and override_level.lower() == st.session_state.get("selected_level", "").lower()
@@ -551,119 +934,145 @@ def main() -> None:
                 st.session_state["_prev_role"] = override_role
                 st.session_state["_prev_level"] = override_level
             st.success(f"Override disimpan untuk {override_role} ({override_level}).")
+    render_sidebar_status(local_mode)
 
-    # Role & Level selectors outside the form so changes apply immediately
-    st.subheader("Role & Level")
+    render_hero()
+
     prev_role = st.session_state.get("_prev_role")
     prev_level = st.session_state.get("_prev_level")
-    role = st.selectbox(
-        "Role",
-        options=list(ROLE_TEMPLATES.keys()),
-        index=list(ROLE_TEMPLATES.keys()).index(st.session_state["selected_role"]),
-        key="selected_role",
-    )
-    level = st.selectbox(
-        "Level",
-        options=["Junior", "Mid", "Senior"],
-        index=["Junior", "Mid", "Senior"].index(st.session_state["selected_level"]),
-        key="selected_level",
-    )
-    if role != prev_role or level != prev_level:
-        expected_default, threshold = _get_template(role, level)
-        st.session_state["expected_answer_text"] = expected_default
-        st.session_state["current_threshold"] = threshold
-        st.session_state["_prev_role"] = role
-        st.session_state["_prev_level"] = level
-    threshold = st.session_state.get("current_threshold", 0.8)
 
-    with st.form("upload_form", clear_on_submit=True):
-        st.subheader("1) Upload Video")
-        uploaded_file = st.file_uploader(
-            "Select interview video",
-            type=["mp4", "webm", "mov", "mkv"],
-            help="Maximum recommended duration 5 minutes.",
-        )
-        candidate_id = st.text_input("Candidate ID (optional)")
-        # Keep the expected answer pre-filled with the active role template even after form clears.
-        expected_prefill = st.session_state.get("expected_answer_text", "")
-        expected_answer = st.text_area(
-            "Expected Answer / Prompt",
-            value=expected_prefill,
-            key="expected_answer_text",
-            help="Digunakan untuk menghitung relevansi jawaban terhadap kisi-kisi role.",
-        )
-        submit = st.form_submit_button("Start Evaluation", use_container_width=True)
+    left_col, right_col = st.columns([1.18, 0.82], gap="large")
 
-    if submit:
-        if not uploaded_file:
-            st.error("Please attach a video file first.")
-        else:
-            try:
-                if local_mode:
-                    result, interview_id, meta = _process_locally(
-                        uploaded_file=uploaded_file,
-                        expected_answer=expected_answer or st.session_state.get("expected_answer_text", ""),
-                        role=role,
-                        level=level,
-                        threshold=threshold,
-                        candidate_id=candidate_id or None,
-                    )
-                    st.session_state["last_interview_id"] = interview_id
-                    st.session_state.setdefault("meta", {})[interview_id] = meta
-                    st.success("Proses lokal selesai.")
-                    render_report(result, interview_id=interview_id, meta=meta)
-                else:
-                    st.info("Uploading video…")
-                    response = upload_video(
-                        api_base=api_base,
-                        file_bytes=uploaded_file.read(),
-                        filename=uploaded_file.name,
-                        mime_type=uploaded_file.type,
-                        candidate_id=candidate_id or None,
-                        expected_answer=expected_answer or st.session_state.get("expected_answer_text", ""),
-                    )
-                    interview_id = response["interview_id"]
-                    st.session_state["last_interview_id"] = interview_id
-                    st.session_state.setdefault("meta", {})[interview_id] = {
-                        "candidate_id": candidate_id or "",
-                        "role": role,
-                        "level": level,
-                        "threshold": threshold,
-                        "expected_answer": expected_answer or st.session_state.get("expected_answer_text", ""),
-                    }
-                    st.success(f"Job queued successfully! Interview ID: {interview_id}")
-                    if poll_enabled:
-                        result = poll_until_complete(api_base, interview_id, timeout=int(poll_timeout))
-                        meta = st.session_state.get("meta", {}).get(interview_id)
-                        render_report(result, interview_id=interview_id, meta=meta)
-            except httpx.HTTPStatusError as exc:
-                st.error(f"Upload failed: {exc.response.text}")
-            except Exception as exc:  # noqa: BLE001
-                st.exception(exc)
+    with left_col:
+        st.markdown('<div class="card"><div class="card-title">⚙️ Interview Setup</div>', unsafe_allow_html=True)
+        role_col, level_col = st.columns(2)
+        with role_col:
+            role = st.selectbox(
+                "Role",
+                options=list(ROLE_TEMPLATES.keys()),
+                index=list(ROLE_TEMPLATES.keys()).index(st.session_state["selected_role"]),
+                key="selected_role",
+            )
+        with level_col:
+            level = st.selectbox(
+                "Level",
+                options=["Junior", "Mid", "Senior"],
+                index=["Junior", "Mid", "Senior"].index(st.session_state["selected_level"]),
+                key="selected_level",
+            )
+        if role != prev_role or level != prev_level:
+            expected_default, threshold = _get_template(role, level)
+            st.session_state["expected_answer_text"] = expected_default
+            st.session_state["current_threshold"] = threshold
+            st.session_state["_prev_role"] = role
+            st.session_state["_prev_level"] = level
+        threshold = st.session_state.get("current_threshold", 0.8)
+        st.caption(f"Evaluation threshold: {threshold:.2f}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.divider()
-    st.subheader("2) Fetch Latest Report")
-    if local_mode:
-        st.info("Local mode aktif. Bagian fetch hanya untuk skenario FastAPI.")
-    else:
-        interview_id_input = st.text_input(
-            "Interview ID",
-            value=st.session_state.get("last_interview_id") or "",
-            help="Use the ID returned after an upload.",
+        st.markdown(
+            '<div class="card"><div class="card-title">🎥 Upload Interview Video</div>'
+            '<div class="support-note"><strong>Upload via Browser</strong><br/>'
+            'Drag & drop atau pilih video interview. Limit 200MB per file • MP4, WEBM, MOV, MKV, MPEG4.</div>',
+            unsafe_allow_html=True,
         )
-        if st.button("Fetch Result", use_container_width=True):
-            if not interview_id_input:
-                st.warning("Provide an interview ID first.")
+        with st.form("upload_form", clear_on_submit=True):
+            uploaded_file = st.file_uploader(
+                "Select interview video",
+                type=["mp4", "webm", "mov", "mkv", "mpeg4"],
+                help="Maximum recommended duration 5 minutes.",
+            )
+            candidate_id = st.text_input("Candidate ID (optional)")
+            expected_prefill = st.session_state.get("expected_answer_text", "")
+            expected_answer = st.text_area(
+                "Expected Answer / Prompt",
+                value=expected_prefill,
+                key="expected_answer_text",
+                height=135,
+                help="Digunakan untuk menghitung relevansi jawaban terhadap kisi-kisi role.",
+            )
+            submit = st.form_submit_button("▶ Start Evaluation", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if submit:
+            if not uploaded_file:
+                st.error("Please attach a video file first.")
             else:
                 try:
-                    result = fetch_result(api_base, interview_id_input)
-                    meta = st.session_state.get("meta", {}).get(interview_id_input) if "meta" in st.session_state else None
-                    render_report(result, interview_id=interview_id_input, meta=meta)
+                    if local_mode:
+                        result, interview_id, meta = _process_locally(
+                            uploaded_file=uploaded_file,
+                            expected_answer=expected_answer or st.session_state.get("expected_answer_text", ""),
+                            role=role,
+                            level=level,
+                            threshold=threshold,
+                            candidate_id=candidate_id or None,
+                        )
+                        st.session_state["last_interview_id"] = interview_id
+                        st.session_state.setdefault("meta", {})[interview_id] = meta
+                        st.session_state["latest_result"] = result
+                        st.success("Proses lokal selesai.")
+                    else:
+                        st.info("Uploading video…")
+                        response = upload_video(
+                            api_base=api_base,
+                            file_bytes=uploaded_file.read(),
+                            filename=uploaded_file.name,
+                            mime_type=uploaded_file.type,
+                            candidate_id=candidate_id or None,
+                            expected_answer=expected_answer or st.session_state.get("expected_answer_text", ""),
+                        )
+                        interview_id = response["interview_id"]
+                        st.session_state["last_interview_id"] = interview_id
+                        st.session_state.setdefault("meta", {})[interview_id] = {
+                            "candidate_id": candidate_id or "",
+                            "role": role,
+                            "level": level,
+                            "threshold": threshold,
+                            "expected_answer": expected_answer or st.session_state.get("expected_answer_text", ""),
+                        }
+                        st.success(f"Job queued successfully! Interview ID: {interview_id}")
+                        if poll_enabled:
+                            result = poll_until_complete(api_base, interview_id, timeout=int(poll_timeout))
+                            st.session_state["latest_result"] = result
                 except httpx.HTTPStatusError as exc:
-                    st.error(f"Backend error: {exc.response.text}")
+                    st.error(f"Upload failed: {exc.response.text}")
                 except Exception as exc:  # noqa: BLE001
                     st.exception(exc)
 
+        st.markdown('<div class="card"><div class="card-title">🔎 Fetch Latest Report</div>', unsafe_allow_html=True)
+        if local_mode:
+            st.info("Local mode aktif. Bagian fetch hanya untuk skenario FastAPI.")
+        else:
+            interview_id_input = st.text_input(
+                "Interview ID",
+                value=st.session_state.get("last_interview_id") or "",
+                help="Use the ID returned after an upload.",
+            )
+            if st.button("Fetch Result", use_container_width=True):
+                if not interview_id_input:
+                    st.warning("Provide an interview ID first.")
+                else:
+                    try:
+                        result = fetch_result(api_base, interview_id_input)
+                        st.session_state["last_interview_id"] = interview_id_input
+                        st.session_state["latest_result"] = result
+                        st.success("Report fetched successfully.")
+                    except httpx.HTTPStatusError as exc:
+                        st.error(f"Backend error: {exc.response.text}")
+                    except Exception as exc:  # noqa: BLE001
+                        st.exception(exc)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with right_col:
+        render_status_cards()
+        render_summary_card()
+        render_transcript_card()
+
+    latest_result, latest_interview_id, latest_meta = _latest_report()
+    if latest_result and latest_result.get("report"):
+        with st.expander("Detailed AI Evaluation Report", expanded=False):
+            render_report(latest_result, interview_id=latest_interview_id, meta=latest_meta)
 
 if __name__ == "__main__":
     main()

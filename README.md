@@ -10,16 +10,21 @@ The current MVP accepts recorded interview videos, extracts audio, transcribes s
 
 ### Streamlit Prototype
 
-The Streamlit prototype provides a simple interface for uploading an interview video, sending it to the FastAPI backend, and viewing the generated transcription and verbal evaluation report.
+The Streamlit prototype provides a polished recruiter-facing interface for setting up an interview assessment, uploading a video, triggering the FastAPI pipeline, and reviewing the generated transcription and verbal evaluation report.
 
-> Screenshot placeholder: add the upload screen at `docs/images/streamlit-upload.png` before sharing this repository publicly.
-<!-- ![Streamlit Upload Screen](docs/images/streamlit-upload.png) -->
+#### Upload & Setup
 
-> Screenshot placeholder: add the completed report/transcript screen at `docs/images/streamlit-report.png` before sharing this repository publicly.
-<!-- ![Streamlit Report Screen](docs/images/streamlit-report.png) -->
+![Streamlit upload and setup screen](docs/images/streamlit-upload.png)
 
-> Diagram placeholder: add a simple architecture diagram at `docs/images/architecture.png` before sharing this repository publicly.
-<!-- ![Architecture Overview](docs/images/architecture.png) -->
+#### Evaluation Summary
+
+![Streamlit evaluation summary screen](docs/images/streamlit-report.png)
+
+#### Detailed Report
+
+![Streamlit detailed report screen](docs/images/streamlit-detailed-report.png)
+
+> Architecture diagram placeholder: add `docs/images/architecture.png` when a visual system overview is available.
 
 ## What This Project Does
 
@@ -233,10 +238,11 @@ The script exits with a non-zero status when overall accuracy is below `0.90`.
 - Background processing uses FastAPI background tasks, not a durable queue; long jobs can be affected by server restarts.
 - The Next.js dashboard is a prototype and does not include authentication or RBAC.
 
-## Screenshots to Add Before Sharing
+## Portfolio Assets
 
-- [ ] `docs/images/streamlit-upload.png` — clean upload screen with API base URL visible.
-- [ ] `docs/images/streamlit-report.png` — completed report/transcript screen using non-sensitive sample data.
+- [x] `docs/images/streamlit-upload.png` — clean upload/setup screen with API base URL visible.
+- [x] `docs/images/streamlit-report.png` — evaluation summary using non-sensitive sample data.
+- [x] `docs/images/streamlit-detailed-report.png` — detailed report/transcript view.
 - [ ] `docs/images/architecture.png` — simple architecture diagram matching the flow in this README.
 
 ## GitHub About Suggestion
