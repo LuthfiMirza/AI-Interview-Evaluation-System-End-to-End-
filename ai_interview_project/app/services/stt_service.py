@@ -1,4 +1,4 @@
-"""High-level Speech-to-Text service with noise handling and evaluation hooks."""
+"""High-level Speech-to-Text service with noise handling and technical prompting."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
 import numpy as np
 import soundfile as sf
@@ -38,11 +38,11 @@ DEFAULT_SOX_EFFECTS: List[List[str]] = [
 
 
 class SpeechToTextService:
-    """Encapsulates audio pre-processing and Whisper inference."""
+    """Encapsulates audio pre-processing and Whisper inference with technical prompt support."""
 
     def __init__(
         self,
-        model_size: str = "medium.en",
+        model_size: str = "base",
         device: str | None = None,
         sox_effects: List[List[str]] | None = None,
     ) -> None:
@@ -111,14 +111,22 @@ class SpeechToTextService:
         waveform = waveform / max(rms, torch.tensor(1e-4, device=waveform.device))
         return waveform.clamp(min=-1.0, max=1.0)
 
-    def transcribe(self, audio_path: str, **kwargs: Any) -> dict[str, Any]:
-        """Run Whisper transcription on a cleaned audio signal."""
+    def transcribe(
+        self,
+        audio_path: str,
+        initial_prompt: Optional[str] = None,
+        language: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Run Whisper transcription on a cleaned audio signal with technical prompt support."""
         cleaned_path = self._preprocess_audio(audio_path)
         try:
             result = transcribe_audio(
                 str(cleaned_path),
                 model_size=self.model_size,
                 device=self.device,
+                initial_prompt=initial_prompt,
+                language=language,
                 **kwargs,
             )
         finally:
@@ -139,6 +147,6 @@ def _auto_device() -> str | None:
 
 
 stt_service = SpeechToTextService(
-    model_size=os.getenv("WHISPER_MODEL_SIZE", "medium.en"),
+    model_size=os.getenv("WHISPER_MODEL_SIZE", "base"),
     device=_auto_device(),
 )
