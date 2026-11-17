@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { Search, Moon, Sun, Bell, Terminal, CheckCircle2 } from "lucide-react";
+import { Search, Moon, Sun, Bell, Terminal } from "lucide-react";
 
 type HeaderProps = {
   apiBaseUrl: string;
+  onOpenHealthModal?: () => void;
 };
 
-export function Header({ apiBaseUrl }: HeaderProps) {
+export function Header({ apiBaseUrl, onOpenHealthModal }: HeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
@@ -52,14 +53,19 @@ export function Header({ apiBaseUrl }: HeaderProps) {
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
-        {/* API Engine Status Pill */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+        {/* API Engine Status Pill (Clickable for Diagnostics) */}
+        <button
+          type="button"
+          onClick={onOpenHealthModal}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200/60 dark:border-emerald-800/60 text-xs font-medium text-emerald-700 dark:text-emerald-400 transition-all cursor-pointer shadow-sm"
+          title="Klik untuk membuka diagnostik sistem"
+        >
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
           FastAPI Engine Active
-        </div>
+        </button>
 
         {/* API Base URL Tag */}
         <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800/80 text-xs font-mono text-gray-600 dark:text-gray-300">

@@ -153,3 +153,4 @@ export function CandidateTable({ interviews, onSelectCandidate }: CandidateTable
     </div>
   );
 }
+

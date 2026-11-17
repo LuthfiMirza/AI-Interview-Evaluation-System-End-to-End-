@@ -86,3 +86,4 @@ export function MetricsRow({ totalInterviews, averageScore, completedCount }: Me
     </div>
   );
 }
+

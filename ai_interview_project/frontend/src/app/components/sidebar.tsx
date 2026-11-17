@@ -14,15 +14,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 type SidebarProps = {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   apiBaseUrl: string;
+  onOpenHealthModal?: () => void;
 };
 
-export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl }: SidebarProps) {
+export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl, onOpenHealthModal }: SidebarProps) {
   const pathname = usePathname();
 
   const mainNav = [
@@ -36,10 +38,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl }: SidebarProp
     { label: "Speech & NLP Metrics", href: "#analytics-section", icon: Activity },
   ];
 
-  const systemNav = [
-    { label: "FastAPI Docs (Swagger)", href: `${apiBaseUrl.replace('/api', '')}/docs`, icon: FileCode, external: true },
-    { label: "Engine Health Check", href: `${apiBaseUrl.replace('/api', '')}/health`, icon: ShieldCheck, external: true },
-  ];
+  const swaggerUrl = `${apiBaseUrl.replace('/api', '')}/docs`;
 
   return (
     <aside
@@ -144,32 +143,46 @@ export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl }: SidebarProp
           </nav>
         </div>
 
-        {/* System & Integrations */}
+        {/* Backend & Diagnostics Section */}
         <div>
           {!isCollapsed && (
             <p className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
-              Backend & API
+              Backend & Status
             </p>
           )}
           <nav className="space-y-1">
-            {systemNav.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60 transition-all"
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {!isCollapsed && (
-                    <span className="flex-1 truncate">{item.label}</span>
-                  )}
-                </a>
-              );
-            })}
+            {/* Interactive Health Check Modal Trigger */}
+            <button
+              type="button"
+              onClick={onOpenHealthModal}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60 transition-all text-left"
+              title={isCollapsed ? "Status Sistem & Diagnostik" : undefined}
+            >
+              <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-500" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 truncate">Status Sistem & Diagnostik</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                </>
+              )}
+            </button>
+
+            {/* Swagger Docs External Link */}
+            <a
+              href={swaggerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60 transition-all"
+              title={isCollapsed ? "FastAPI Swagger Docs" : undefined}
+            >
+              <FileCode className="w-5 h-5 shrink-0 text-brand-500" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 truncate">FastAPI Docs (Swagger)</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                </>
+              )}
+            </a>
           </nav>
         </div>
       </div>
