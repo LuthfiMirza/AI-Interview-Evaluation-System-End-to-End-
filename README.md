@@ -1,119 +1,150 @@
 # AI Interview Evaluation System
 
-Full-stack AI interview analysis MVP focused on speech transcription, verbal response scoring, and recruiter-friendly reporting.
+Full-stack AI interview analysis system powered by Whisper Speech-to-Text, zero-bias acoustic speech rate metrics, concept-matching NLP scoring, PostgreSQL persistence, and dual recruiter portals (**Next.js 14 TailAdmin Analytics Dashboard** + **Streamlit Studio**).
 
-The current MVP accepts recorded interview videos, extracts audio, transcribes speech with local Whisper, scores verbal responses with NLP models, stores results in PostgreSQL, and presents reports through Streamlit and Next.js prototypes.
+The system accepts recorded interview videos, extracts high-fidelity audio, transcribes speech with jargon-aware OpenAI Whisper, evaluates technical qualification through acoustic fluency and semantic concept coverage (tailored for Frontend React & Next.js roles), persists records in PostgreSQL, and delivers recruiter-friendly insights.
 
-> Note: Vision-based/non-verbal analysis and cheating detection are present only as experimental extension code/dependencies. They are not active in the main processing pipeline.
+> **Note on Experimental Extensions:** Vision-based/non-verbal analysis and cheating detection are present as experimental extension modules and dependencies, while the active core pipeline focuses on speech acoustics and verbal competency.
+
+---
+
+## Architecture Overview
+
+![System Architecture Overview](docs/images/architecture.png)
+
+```mermaid
+flowchart TD
+  A["Candidate Video (.mp4 / .webm)"] --> B["FastAPI Backend (:9001)"]
+  B --> C["FFmpeg Audio Extract (16kHz Mono)"]
+  C --> D["Whisper STT (Tech Jargon Bias)"]
+  D --> E["Transcript Segments & Timestamps"]
+  E --> F["Acoustic Fluency Scorer<br/>(WPM, Fillers, Pauses)"]
+  E --> G["Concept Relevance Scorer<br/>(MiniLM + Rubric Checklist)"]
+  F --> H["Final Verbal Scoring Aggregator<br/>(60% Relevance + 40% Fluency)"]
+  G --> H
+  H --> I[("PostgreSQL Database")]
+  I --> J["Next.js 14 TailAdmin Dashboard (:3000)"]
+  I --> K["Streamlit Rapid Studio (:8501)"]
+```
+
+---
 
 ## Demo Preview
 
-### Streamlit Prototype
+### 1. Next.js 14 TailAdmin Modern Dashboard (Primary Portal)
 
-The Streamlit prototype provides a polished recruiter-facing interface for setting up an interview assessment, uploading a video, triggering the FastAPI pipeline, and reviewing the generated transcription and verbal evaluation report.
+Built with **Next.js 14 App Router**, **Tailwind CSS**, and inspired by **TailAdmin**, the primary dashboard provides a multi-page, role-driven workspace for technical recruiters and engineering managers.
+
+#### A. Executive Overview & Live Hub
+Presents high-level hiring metrics, average verbal scores, speech pace (WPM), candidate throughput, and quick links to active evaluation tools.
+
+![Next.js Executive Overview](docs/images/nextjs-dashboard-overview.png)
+
+#### B. Video Assessment Studio
+Interactive ingestion panel allowing recruiters to select target qualification levels (Junior, Mid, Senior Frontend Engineer) with automated rubric concept mapping, video drag-and-drop, and real-time processing status.
+
+![Next.js Video Assessment Studio](docs/images/nextjs-video-assessment.png)
+
+#### C. React & Next.js Rubric & Criteria
+Comprehensive technical qualification rubrics defining expected answer targets and key concept checklists (App Router, Zustand, Rendering Strategies, Web Vitals, Clean Architecture) alongside Whisper tech-jargon vocabulary injections.
+
+![Next.js Rubrics and Criteria](docs/images/nextjs-rubrics.png)
+
+#### D. Speech & NLP Metrics Analytics
+Transparent metric breakdown illustrating acoustic pacing benchmarks (110–165 WPM optimal), bilingual filler word detection (`"ehm"`, `"uhm"`, `"anu"`, `"apa ya"`), and the exact verbal formula weighting.
+
+![Next.js Speech and NLP Analytics](docs/images/nextjs-nlp-analytics.png)
+
+#### E. Candidate Directory & Database
+Structured candidate directory backed by PostgreSQL and Prisma ORM, offering status filtering, score breakdowns, AI summaries, and audit histories.
+
+![Next.js Candidate Directory](docs/images/nextjs-candidate-directory.png)
+
+---
+
+### 2. Streamlit Prototype (Rapid Assessment Studio)
+
+The companion Streamlit application provides a rapid recruiter-facing interface for ad-hoc evaluations, local model verification, and deep-dive transcript inspections.
 
 #### Upload & Setup
+Clean setup interface supporting candidate ID configuration, target role selection, and API endpoint routing.
 
 ![Streamlit upload and setup screen](docs/images/streamlit-upload.png)
 
 #### Evaluation Summary
+Aggregated score cards displaying verbal score, fluency, relevance, and actionable recruiter feedback.
 
 ![Streamlit evaluation summary screen](docs/images/streamlit-report.png)
 
-#### Detailed Report
+#### Detailed Report & Segments
+Drill-down view of timestamped Whisper segments, acoustic pacing notes, and transcript inspection.
 
 ![Streamlit detailed report screen](docs/images/streamlit-detailed-report.png)
 
-> Architecture diagram placeholder: add `docs/images/architecture.png` when a visual system overview is available.
+---
 
 ## What This Project Does
 
-- Uploads recorded interview video through FastAPI, Streamlit, or the Next.js dashboard prototype.
-- Extracts 16 kHz mono audio from video files using `ffmpeg`.
-- Transcribes speech using a configurable local Whisper model.
-- Scores verbal responses for fluency, relevance, confidence, and final verbal score.
-- Persists interview, transcript, and NLP score records in PostgreSQL with SQLAlchemy.
-- Displays recruiter-friendly summaries through Streamlit and a Next.js/Prisma dashboard.
-- Includes an STT evaluation script for labeled audio/transcript samples.
+- **Video Ingestion:** Uploads recorded interview videos through FastAPI REST API, Next.js TailAdmin dashboard, or Streamlit prototype.
+- **Audio Preprocessing:** Extracts 16 kHz mono audio cleanly from video formats using `ffmpeg`.
+- **Jargon-Biased STT:** Transcribes speech using OpenAI Whisper models (`medium`, `base`), enhanced with an `initial_prompt` covering modern software terms (React, Next.js, App Router, Zustand, TypeScript).
+- **Acoustic Fluency Scoring:** Evaluates speaking rate (Words Per Minute), detects bilingual filler words, and measures pause gaps without English grammar bias.
+- **Concept Relevance Scoring:** Matches candidate responses against role-specific key concepts (55% weight) combined with `all-MiniLM-L6-v2` cosine semantic similarity (45% weight).
+- **PostgreSQL Persistence:** Stores interviews, transcripts, and detailed NLP evaluation metrics using SQLAlchemy and Prisma ORM.
+- **Dual Recruiter Frontends:** Full-featured Next.js 14 TailAdmin dashboard for enterprise analytics and Streamlit for rapid verification.
+- **STT Accuracy Validation:** Includes a dedicated evaluation script for benchmarking WER/accuracy across test datasets.
 
-## Current Features
-
-- FastAPI backend with documented upload/result endpoints.
-- Whisper-based speech-to-text pipeline.
-- NLP-based verbal response scoring.
-- PostgreSQL persistence through active SQLAlchemy models.
-- Streamlit prototype for upload and report review.
-- Next.js dashboard prototype backed by Prisma.
-- Docker-ready backend setup.
-- Environment examples for backend and frontend configuration.
-
-## Not Active Yet / Planned
-
-- Vision-based/non-verbal scoring in the main processing pipeline.
-- Cheating detection pipeline in production flow.
-- Durable task queue for long-running jobs.
-- Authentication and role-based access control.
-- Cloud object storage for media and generated artifacts.
-- CI/CD, automated test coverage, and hosted demo deployment.
+---
 
 ## Tech Stack
 
-| Layer | Tools |
+| Layer | Technologies |
 | --- | --- |
-| Backend | FastAPI, Uvicorn, SQLAlchemy |
-| Speech-to-Text | OpenAI Whisper, ffmpeg |
-| NLP | HuggingFace Transformers, Torch, SentencePiece |
-| Database | PostgreSQL, SQLAlchemy, Prisma |
-| Interfaces | Streamlit, Next.js, React |
-| Tooling | Docker, python-dotenv, TypeScript, ESLint |
-| Experimental Extensions | YOLOv8, Mediapipe, OpenCV, MinIO/S3 |
+| **Backend Engine** | FastAPI, Uvicorn, SQLAlchemy |
+| **Speech-to-Text (STT)** | OpenAI Whisper (`medium`, `base`), FFmpeg, Software Jargon Prompts |
+| **NLP & Acoustic Scoring** | PyTorch, `sentence-transformers` (`all-MiniLM-L6-v2`), `AcousticFluencyScorer`, `ConceptRelevanceScorer` |
+| **Database & ORM** | PostgreSQL, SQLAlchemy, Prisma ORM |
+| **Primary Dashboard** | Next.js 14 (App Router), React 18, Tailwind CSS v3, TailAdmin UI, Lucide Icons |
+| **Rapid Prototype** | Streamlit, Pandas, Altair |
+| **Tooling & Infrastructure** | Docker, TypeScript, ESLint, Python Dotenv |
+| **Experimental Extensions** | YOLOv8, MediaPipe, OpenCV, MinIO/S3 |
 
-## Architecture Overview
-
-```text
-Video Upload
-    │
-    ├── Streamlit prototype / Next.js dashboard / FastAPI API
-    │
-FastAPI Backend
-    │
-    ├── Store temporary upload in uploads/
-    ├── Extract audio with ffmpeg
-    ├── Transcribe speech with Whisper
-    ├── Score transcript with NLP models
-    ├── Aggregate verbal report
-    └── Persist Interview, Transcript, and NLPScore records
-    │
-PostgreSQL Database
-    │
-    ├── Next.js dashboard reads via Prisma
-    └── Result endpoint returns report status/details
-```
-
-A visual diagram should be added at `docs/images/architecture.png` before sharing the repository publicly.
+---
 
 ## Repository Layout
 
 ```text
 ai_interview_project/
 ├── app/                         # FastAPI application
-│   ├── main.py                  # App factory, CORS, health, DB startup
-│   ├── db.py                    # SQLAlchemy engine/session setup
-│   ├── routes/interview_routes.py
-│   ├── models/                  # DB models + ML wrappers
-│   ├── services/stt_service.py  # Whisper transcription service
-│   └── utils/                   # Audio, NLP, report, vision helpers
-├── frontend/                    # Next.js + Prisma dashboard prototype
-├── streamlit_frontend/          # Streamlit prototype UI
-├── scripts/                     # STT evaluation/fine-tuning utilities
-├── data/                        # Local datasets/generated DB files; ignored except .gitkeep
-├── outputs/                     # Generated audio/transcript artifacts; ignored
-├── uploads/                     # Temporary uploaded videos; ignored
-├── requirements.txt             # Backend + ML dependencies
-├── Dockerfile                   # Backend container image
-├── .env.example                 # Backend env sample
+│   ├── main.py                  # App entrypoint, CORS, health checks, DB init
+│   ├── db.py                    # SQLAlchemy engine & session management
+│   ├── routes/interview_routes.py # REST endpoints (upload, polling, results)
+│   ├── models/                  # DB entities + NLP/Whisper model wrappers
+│   │   ├── nlp_model.py         # AcousticFluencyScorer & ConceptRelevanceScorer
+│   │   └── whisper_model.py     # Whisper wrapper with technical jargon bias
+│   ├── services/stt_service.py  # Audio extraction & transcription pipeline
+│   └── utils/                   # Audio, NLP, report, and metrics utilities
+├── frontend/                    # Next.js 14 TailAdmin Analytics Dashboard
+│   ├── src/app/
+│   │   ├── page.tsx             # Executive Overview
+│   │   ├── assessment/page.tsx  # Video Assessment Studio
+│   │   ├── candidates/page.tsx  # Candidate Directory
+│   │   ├── rubrics/page.tsx     # React & Next.js Evaluation Rubrics
+│   │   ├── analytics/page.tsx   # Speech & NLP Metrics Analytics
+│   │   └── components/          # Sidebar, Header, Shell, Metrics, Modals
+│   ├── tailwind.config.js       # TailAdmin design tokens and palettes
+│   └── prisma/schema.prisma     # Prisma database schema definition
+├── streamlit_frontend/          # Streamlit rapid evaluation prototype
+│   └── streamlit_app.py         # Streamlit UI with React/Next.js role templates
+├── scripts/                     # STT benchmarking and evaluation tools
+├── docs/images/                 # Architecture diagram and high-res UI previews
+├── requirements.txt             # Backend and ML dependencies
+├── Dockerfile                   # Production-ready backend container
+├── .env.example                 # Backend environment variable template
 └── README.md
 ```
+
+---
 
 ## How to Run Locally
 
@@ -121,11 +152,13 @@ ai_interview_project/
 
 - Python 3.10+
 - Node.js 18+ and npm
-- `ffmpeg` available on `PATH`
-- PostgreSQL database reachable from backend and frontend
-- Optional: Docker Desktop for backend container workflow
+- `ffmpeg` installed and available on system `PATH`
+- PostgreSQL database instance
+- Optional: Docker Desktop for containerized deployment
 
-### Backend API
+---
+
+### 1. Backend API (FastAPI)
 
 ```bash
 cd ai_interview_project
@@ -134,27 +167,14 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 9001 --reload
 ```
 
-Windows virtualenv activation:
+*Swagger API Documentation is accessible at: `http://127.0.0.1:9001/docs`*
 
-```powershell
-.\.venv\Scripts\activate
-```
+---
 
-The backend requires `DATABASE_URL` and creates SQLAlchemy tables on startup with `Base.metadata.create_all()`.
-
-### Streamlit Prototype
-
-```bash
-cd ai_interview_project
-streamlit run streamlit_frontend/streamlit_app.py
-```
-
-Open `http://localhost:8501`. The Streamlit UI uses `NEXT_PUBLIC_API_BASE_URL` when available, otherwise defaults to `http://localhost:8000/api`.
-
-### Next.js Dashboard Prototype
+### 2. Next.js 14 TailAdmin Dashboard (Primary Portal)
 
 ```bash
 cd ai_interview_project/frontend
@@ -164,106 +184,116 @@ npx prisma generate
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+*Open your browser at: `http://localhost:3000`*
 
-Run Prisma migrations only when you intentionally want Prisma to manage schema changes:
+Available pages:
+- **Overview:** `http://localhost:3000/`
+- **Video Assessment:** `http://localhost:3000/assessment`
+- **Candidate Directory:** `http://localhost:3000/candidates`
+- **Evaluation Rubrics:** `http://localhost:3000/rubrics`
+- **Speech & NLP Analytics:** `http://localhost:3000/analytics`
+
+---
+
+### 3. Streamlit Prototype (Companion Studio)
 
 ```bash
-npx prisma migrate dev --name init
+cd ai_interview_project
+source .venv/bin/activate
+streamlit run streamlit_frontend/streamlit_app.py
 ```
 
-### Docker Backend
+*Open your browser at: `http://localhost:8501`*
+
+---
+
+### 4. Docker Backend Deployment
 
 ```bash
 cd ai_interview_project
 docker build -t ai-interview-api .
-docker run --rm -p 8000:8000 --env-file .env ai-interview-api
+docker run --rm -p 9001:9001 --env-file .env ai-interview-api
 ```
 
-If PostgreSQL runs on the host machine, update `DATABASE_URL` so it is reachable from inside the container; container `localhost` usually does not point to the host database.
+---
 
 ## API Endpoints
 
-Swagger UI: `http://localhost:8000/docs`
+Swagger UI: `http://127.0.0.1:9001/docs`
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/health` | Service heartbeat |
-| `POST` | `/api/interviews/upload` | Upload interview video with `file`, optional `candidate_id`, optional `expected_answer` |
-| `GET` | `/api/interviews/result/{interview_id}` | Poll processing status or completed report |
+| `GET` | `/health` | Service health status, GPU availability, and model readiness |
+| `POST` | `/api/interviews/upload` | Upload video (`file`), `candidate_id`, `role`, and `expected_answer` |
+| `GET` | `/api/interviews/result/{interview_id}` | Poll processing status or fetch full scoring report |
+
+---
 
 ## Environment Variables
 
-Backend `.env`:
+### Backend `.env`:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string. No automatic SQLite fallback exists. |
-| `LOG_LEVEL` | No | Python logging level, default `INFO`. |
-| `WHISPER_MODEL_SIZE` | No | Whisper model size, default sample value is `base.en`. |
-| `WHISPER_DEVICE` | No | Optional device override such as `cuda`; blank uses default device selection. |
-| `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, `S3_BUCKET_NAME` | No | Reserved for future S3 usage. |
-| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | No | Reserved for future MinIO usage. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql://user:pass@host:5432/dbname`) |
+| `LOG_LEVEL` | No | Python logging level (default: `INFO`) |
+| `WHISPER_MODEL_SIZE` | No | Whisper model size (default: `base`, options: `medium`, `small`, `tiny`) |
+| `WHISPER_DEVICE` | No | Device target override (`cuda`, `mps`, or `cpu`) |
 
-Frontend `.env`:
+### Frontend `.env`:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL URL used by Prisma. |
-| `NEXT_PUBLIC_API_BASE_URL` | No | FastAPI base URL, usually `http://localhost:8000/api`. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string used by Prisma |
+| `NEXT_PUBLIC_API_BASE_URL` | No | FastAPI backend URL (default: `http://127.0.0.1:9001/api`) |
 
-Never commit real `.env` secrets.
+---
 
 ## STT Accuracy Validation
 
-Prepare audio files and matching transcripts in one directory, for example `sample01.wav` and `sample01.txt`.
+Benchmark Whisper Speech-to-Text accuracy against labeled audio samples:
 
 ```bash
 cd ai_interview_project
-python -m scripts.evaluate_stt --dataset-dir ./data/stt_eval --model-size medium.en
+python -m scripts.evaluate_stt --dataset-dir ./data/stt_eval --model-size medium
 ```
 
-Optional arguments:
+*The evaluation script verifies transcription Word Error Rate (WER) and outputs metric reports.*
 
-- `--device cuda` to run Whisper on GPU.
-- `--limit N` to evaluate only the first N samples.
+---
 
-The script exits with a non-zero status when overall accuracy is below `0.90`.
+## Portfolio Assets Checklist
 
-## Known Limitations
+- [x] `docs/images/architecture.png` — complete system technical blueprint.
+- [x] `docs/images/nextjs-dashboard-overview.png` — executive overview with live metrics and recent evaluations.
+- [x] `docs/images/nextjs-video-assessment.png` — video upload studio with level-based rubrics.
+- [x] `docs/images/nextjs-rubrics.png` — React & Next.js qualification criteria & key concept checklists.
+- [x] `docs/images/nextjs-nlp-analytics.png` — speech rate (WPM), bilingual filler words, and scoring breakdown.
+- [x] `docs/images/nextjs-candidate-directory.png` — candidate directory & PostgreSQL records.
+- [x] `docs/images/streamlit-upload.png` — Streamlit upload & setup screen.
+- [x] `docs/images/streamlit-report.png` — Streamlit evaluation summary screen.
+- [x] `docs/images/streamlit-detailed-report.png` — Streamlit detailed report/transcript view.
 
-- `DATABASE_URL` is required; the app does not automatically fall back to SQLite.
-- Vision/non-verbal/cheating metrics are modeled in parts of the codebase but are not written by the current backend pipeline.
-- Uploaded media and generated audio are handled on local disk, not cloud object storage.
-- Background processing uses FastAPI background tasks, not a durable queue; long jobs can be affected by server restarts.
-- The Next.js dashboard is a prototype and does not include authentication or RBAC.
-
-## Portfolio Assets
-
-- [x] `docs/images/streamlit-upload.png` — clean upload/setup screen with API base URL visible.
-- [x] `docs/images/streamlit-report.png` — evaluation summary using non-sensitive sample data.
-- [x] `docs/images/streamlit-detailed-report.png` — detailed report/transcript view.
-- [ ] `docs/images/architecture.png` — simple architecture diagram matching the flow in this README.
+---
 
 ## GitHub About Suggestion
 
-Description:
-
+**Description:**
 ```text
-Full-stack AI interview analysis MVP using FastAPI, Whisper, NLP scoring, PostgreSQL, Next.js, and Streamlit.
+Full-stack AI interview evaluation system using Whisper STT, acoustic speech rate analytics, concept-matching NLP, PostgreSQL, Next.js 14 TailAdmin dashboard, and Streamlit.
 ```
 
-Topics:
-
+**Topics:**
 ```text
-fastapi, whisper, nlp, interview-analysis, streamlit, nextjs, postgresql, sqlalchemy, machine-learning, portfolio-project
+fastapi, whisper, nlp, speech-to-text, interview-analysis, nextjs, tailwindcss, tailadmin, streamlit, postgresql, sqlalchemy, prisma, machine-learning, ai-recruitment
 ```
+
+---
 
 ## Roadmap
 
-- Add durable async processing with Celery, Dramatiq, RQ, or another queue.
-- Activate and persist vision/non-verbal metrics after validation.
-- Add authentication and role-based access control for recruiter/HR workflows.
-- Add report detail pages, charts, and transcript drill-downs.
-- Wire cloud object storage for raw media and generated artifacts.
-- Add automated backend/frontend tests and CI/CD.
+- [ ] Celery / Redis durable task queue for asynchronous batch processing.
+- [ ] Integration of multi-speaker diarization for interviewer-candidate conversation separation.
+- [ ] Role-Based Access Control (RBAC) & NextAuth integration for multi-tenant HR organizations.
+- [ ] Cloud object storage integration (AWS S3 / Google Cloud Storage) for uploaded media artifacts.
+- [ ] Automated end-to-end testing pipeline with GitHub Actions CI/CD.
