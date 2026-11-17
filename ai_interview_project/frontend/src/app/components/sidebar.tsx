@@ -29,13 +29,13 @@ export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl, onOpenHealthM
 
   const mainNav = [
     { label: "Dashboard Overview", href: "/", icon: LayoutDashboard, badge: "Live" },
-    { label: "Video Assessment", href: "#upload-section", icon: Video },
-    { label: "Candidate Directory", href: "#candidates-section", icon: Users },
+    { label: "Video Assessment", href: "/assessment", icon: Video },
+    { label: "Candidate Directory", href: "/candidates", icon: Users },
   ];
 
   const evalNav = [
-    { label: "React & Next.js Rubric", href: "#rubric-section", icon: Code2, badge: "New" },
-    { label: "Speech & NLP Metrics", href: "#analytics-section", icon: Activity },
+    { label: "React & Next.js Rubric", href: "/rubrics", icon: Code2, badge: "New" },
+    { label: "Speech & NLP Metrics", href: "/analytics", icon: Activity },
   ];
 
   const swaggerUrl = `${apiBaseUrl.replace('/api', '')}/docs`;
@@ -121,11 +121,16 @@ export function Sidebar({ isCollapsed, setIsCollapsed, apiBaseUrl, onOpenHealthM
           <nav className="space-y-1">
             {evalNav.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60 transition-all"
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60"
+                  }`}
                   title={isCollapsed ? item.label : undefined}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
