@@ -32,24 +32,60 @@ ROLE_TEMPLATES: Dict[str, Dict[str, Dict[str, Any]]] = {
     "Frontend Engineer": {
         "junior": {
             "expected_answer": (
-                "Jelaskan pengalaman membangun UI dengan React/Next, manajemen state (hooks/RTK), "
-                "testing dasar, dan perhatian ke aksesibilitas serta performa render."
+                "Menguasai React.js, Next.js, dan TypeScript, serta memahami arsitektur Component, "
+                "Routing (App Router/Pages Router), State Management (Zustand/Redux/Context API), "
+                "dan Data Fetching/API Integration."
             ),
-            "threshold": 0.78,
+            "key_concepts": [
+                "component architecture",
+                "routing",
+                "state management",
+                "data fetching / api",
+                "typescript",
+            ],
+            "technical_prompt": (
+                "React, Next.js, TypeScript, Component, Props, Routing, App Router, Pages Router, "
+                "State Management, Zustand, Redux, Context API, useState, useEffect, Data Fetching, API"
+            ),
+            "threshold": 0.75,
         },
         "mid": {
             "expected_answer": (
-                "Bahas arsitektur frontend (componentization, state global), optimasi (memo, lazy load), "
-                "testing (RTL/Jest), aksesibilitas, dan kolaborasi dengan backend/desain."
+                "Menguasai React.js dan Next.js tingkat lanjut dengan TypeScript, arsitektur Componentisasi "
+                "skalabel, optimasi performa render (memo, lazy loading, SSR/SSG/ISR), global State Management "
+                "(Zustand/RTK), routing dinamis, dan strategi data fetching yang handal."
             ),
-            "threshold": 0.82,
+            "key_concepts": [
+                "component architecture",
+                "performance optimization",
+                "state management",
+                "ssr / ssg / isr",
+                "testing / accessibility",
+            ],
+            "technical_prompt": (
+                "React, Next.js, TypeScript, Server Components, Client Components, SSR, SSG, ISR, "
+                "Hydration, Performance, Memoization, Zustand, Redux Toolkit, React Query, Routing"
+            ),
+            "threshold": 0.80,
         },
         "senior": {
             "expected_answer": (
-                "Strategi skalabilitas frontend, design system, performance profiling, testing strategy, "
-                "observability (logging/metrics), dan pengalaman memimpin delivery."
+                "Kepemimpinan arsitektur frontend skala besar dengan React dan Next.js: Design System, "
+                "Micro-frontend atau monorepo, optimasi Core Web Vitals, observability & error tracking, "
+                "strategi testing komprehensif, dan arsitektur state terdistribusi."
             ),
-            "threshold": 0.86,
+            "key_concepts": [
+                "design system / architecture",
+                "core web vitals / performance",
+                "state management architecture",
+                "testing strategy",
+                "observability / monitoring",
+            ],
+            "technical_prompt": (
+                "React, Next.js, Architecture, Design System, Monorepo, Core Web Vitals, "
+                "Performance Profiling, State Management, End-to-end Testing, CI/CD, Observability"
+            ),
+            "threshold": 0.85,
         },
     },
     "Backend Engineer": {
@@ -284,14 +320,24 @@ def _process_locally(
         with st.spinner("Menyiapkan audio (ffmpeg)…"):
             audio_path = extract_audio(temp_video.name)
 
+        role_cfg = ROLE_TEMPLATES.get(role, {}).get(level.lower(), {})
+        technical_prompt = role_cfg.get("technical_prompt")
+        key_concepts = role_cfg.get("key_concepts")
+
         with st.spinner("Memuat model Whisper & transcribing… (pertama kali agak lama)"):
-            stt_result = _cached_transcriber().transcribe(audio_path)
+            stt_result = _cached_transcriber().transcribe(
+                audio_path,
+                initial_prompt=technical_prompt,
+            )
 
         transcript = (stt_result.get("text") or "").strip()
+        segments = stt_result.get("segments") or []
         with st.spinner("Skoring NLP (relevance + fluency)…"):
             nlp_scores = score_transcript(
                 transcript=transcript,
                 expected_answer=expected_answer or "",
+                key_concepts=key_concepts,
+                segments=segments,
                 scoring_model=_cached_nlp_model(),
                 include_summary=False,
             )
@@ -409,22 +455,54 @@ def render_report(result: Dict[str, Any], interview_id: str | None = None, meta:
                 st.info("Transkrip tidak tersedia.")
             st.caption("Catatan: detail per-pertanyaan belum tersedia di pipeline ini.")
 
-    # Analisis audio & delivery (proxy from confidence)
+    # Key concepts breakdown (Rubric analysis)
+    details = report.get("details") or {}
+    matched_concepts = details.get("matched_concepts", [])
+    missing_concepts = details.get("missing_concepts", [])
+    concept_coverage_pct = details.get("concept_coverage_pct", 0.0)
+
+    if matched_concepts or missing_concepts:
+        with st.container():
+            st.markdown("#### Cakupan Konsep Teknis (Key Concept Rubric)")
+            st.markdown(f"**Tingkat Penguasaan Konsep**: `{concept_coverage_pct:.0f}%`")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**✅ Konsep Dikuasai / Disebutkan:**")
+                if matched_concepts:
+                    for c in matched_concepts:
+                        st.markdown(f"- :green[**{c}**]")
+                else:
+                    st.caption("Tidak ada konsep kunci yang terdeteksi.")
+            with c2:
+                st.markdown("**⚠️ Konsep yang Belum Disentuh:**")
+                if missing_concepts:
+                    for c in missing_concepts:
+                        st.markdown(f"- :orange[**{c}**]")
+                else:
+                    st.caption("Semua konsep kunci berhasil disentuh.")
+
+    # Analisis audio & delivery (Acoustic fluency metrics)
     with st.container():
-        st.markdown("#### Analisis Audio & Delivery (proxy)")
-        speed = "Normal"  # tidak dianalisis saat ini
-        articulation = "Jelas" if confidence >= 0.7 else "Perlu perbaikan"
-        filler = "Sedang"  # placeholder
-        emotion = "Tidak dianalisis"
-        consistency = "Tinggi" if confidence >= 0.7 else "Sedang"
-        st.markdown(
-            f"- Kecepatan bicara: {speed}\n"
-            f"- Artikulasi: {articulation}\n"
-            f"- Filler words: {filler}\n"
-            f"- Emosi: {emotion}\n"
-            f"- Konsistensi jawaban: {consistency}\n"
-            "_Catatan: metrik ini bersifat placeholder, pipeline saat ini fokus ke STT + NLP._"
-        )
+        st.markdown("#### Analisis Kecepatan & Kelancaran Bicara")
+        wpm = details.get("wpm")
+        wpm_status = details.get("wpm_status", "optimal")
+        filler_count = details.get("filler_count", 0)
+        filler_words = details.get("filler_words_found", [])
+        filler_rate_pct = details.get("filler_rate_pct", 0.0)
+
+        d_col1, d_col2, d_col3 = st.columns(3)
+        if wpm is not None and wpm > 0:
+            status_label = "Optimal" if wpm_status == "optimal" else ("Lambat" if wpm_status == "slow" else "Cepat")
+            d_col1.metric("Kecepatan Bicara", f"{wpm:.0f} WPM", status_label)
+        else:
+            d_col1.metric("Kecepatan Bicara", "Normal", "Estimasi")
+
+        d_col2.metric("Kata Gumaman (Filler)", f"{filler_count} kata", f"{filler_rate_pct:.1f}%")
+        art_label = "Jelas" if confidence >= 0.7 else "Perlu perbaikan"
+        d_col3.metric("Artikulasi Audio", f"{confidence:.2f}", art_label)
+
+        if filler_words:
+            st.caption(f"Kata pengisi/filler yang terdeteksi: *{', '.join(filler_words[:6])}*")
 
     # Key quotes
     with st.container():

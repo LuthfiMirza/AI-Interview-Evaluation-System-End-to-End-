@@ -1,4 +1,4 @@
-"""Aggregation utilities to combine STT + NLP results."""
+"""Aggregation utilities to combine STT + NLP results with acoustic & concept details."""
 
 from __future__ import annotations
 
@@ -32,15 +32,20 @@ def aggregate_results(
 ) -> Dict[str, Any]:
     """Combine STT + NLP outputs into a unified interview report."""
     verbal_score = float(nlp_result.get("overall_score", 0.0))
+    fluency_score = float(nlp_result.get("fluency", verbal_score))
+    relevance_score = float(nlp_result.get("relevance", verbal_score))
     confidence = float(stt_result.get("confidence") or _extract_confidence(stt_result))
     final_score = verbal_score  # with no vision features, use verbal score as the final score
 
     report = {
         "verbal_score": round(verbal_score, 3),
+        "fluency_score": round(fluency_score, 3),
+        "relevance_score": round(relevance_score, 3),
         "confidence": round(confidence, 3),
         "final_score": round(final_score, 3),
         "summary": nlp_result.get("summary", ""),
         "transcript": stt_result.get("text", ""),
+        "details": nlp_result.get("details", {}),
     }
     LOGGER.info("Aggregated interview report generated.")
     return report

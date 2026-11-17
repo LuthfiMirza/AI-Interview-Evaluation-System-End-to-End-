@@ -114,9 +114,14 @@ def _process_interview(
         audio_path = Path(extract_audio(str(video_path)))
         stt_result = stt_service.transcribe(str(audio_path))
         transcript_text = stt_result.get("text", "")
+        segments = stt_result.get("segments") or []
         if not transcript_text.strip():
             raise ValueError("Transkripsi kosong; pastikan video memiliki suara yang jelas.")
-        nlp_result = score_transcript(transcript_text, expected_answer or transcript_text)
+        nlp_result = score_transcript(
+            transcript=transcript_text,
+            expected_answer=expected_answer or transcript_text,
+            segments=segments,
+        )
         report = aggregate_results(stt_result, nlp_result)
         RESULT_STORE[interview_id] = {
             "candidate_id": candidate_identifier,
