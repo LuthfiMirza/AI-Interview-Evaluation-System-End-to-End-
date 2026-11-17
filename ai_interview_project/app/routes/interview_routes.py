@@ -199,8 +199,11 @@ def _load_result_from_db(interview_id: str) -> Optional[Dict]:
 
         if interview.status == "completed":
             transcript = interview.transcript
+            nlp = interview.nlp
             report = {
                 "verbal_score": interview.verbalScore,
+                "fluency_score": nlp.fluency if nlp else interview.verbalScore,
+                "relevance_score": nlp.relevance if nlp else interview.verbalScore,
                 "confidence": interview.confidence,
                 "final_score": interview.finalScore,
                 "summary": interview.summary or "",
