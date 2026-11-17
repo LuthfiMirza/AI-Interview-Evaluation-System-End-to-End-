@@ -278,6 +278,12 @@ class NLPScoringModel:
                         concept_matched = True
                         break
 
+                    # For multi-word concepts, check if any primary distinctive word appears (e.g. "component" in "component architecture")
+                    core_words = [w for w in re.split(r"\s+", term) if len(w) > 3]
+                    if core_words and any(re.search(rf"\b{re.escape(w)}\b", candidate_lower) for w in core_words):
+                        concept_matched = True
+                        break
+
                 if concept_matched:
                     matched_concepts.append(concept)
                 else:
