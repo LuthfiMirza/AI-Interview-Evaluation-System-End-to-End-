@@ -23,6 +23,7 @@ import { FloatingBulkBar } from "./floating-bulk-bar";
 import { CandidateDrawer, DrawerCandidateData } from "./candidate-drawer";
 import { CandidateCompareModal, CompareCandidateItem } from "./candidate-compare-modal";
 import { RecruiterEmailModal, EmailCandidateData } from "./recruiter-email-modal";
+import { WhatsAppNotificationModal, WhatsAppCandidateData } from "./whatsapp-notification-modal";
 import { exportCandidatesToCSV, ExportCandidateRow } from "../utils/export-candidates-csv";
 
 export type InterviewCandidate = {
@@ -96,6 +97,7 @@ export function CandidateTable({ interviews: initialInterviews, apiBaseUrl }: Ca
   // Modals state
   const [drawerCandidate, setDrawerCandidate] = useState<DrawerCandidateData | null>(null);
   const [emailCandidate, setEmailCandidate] = useState<EmailCandidateData | null>(null);
+  const [whatsAppCandidate, setWhatsAppCandidate] = useState<WhatsAppCandidateData | null>(null);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   // Sync state if initialInterviews updates
@@ -717,6 +719,21 @@ export function CandidateTable({ interviews: initialInterviews, apiBaseUrl }: Ca
 
                           <button
                             onClick={() =>
+                              setWhatsAppCandidate({
+                                candidateId: c.candidateId,
+                                roleLevel: c.roleLevel || "MID",
+                                finalScore: c.finalScore,
+                                keyStrengths: c.keyStrengths,
+                              })
+                            }
+                            className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                            title="Kirim Pesan WhatsApp Cepat"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() =>
                               setEmailCandidate({
                                 candidateId: c.candidateId,
                                 roleLevel: c.roleLevel || "MID",
@@ -760,6 +777,14 @@ export function CandidateTable({ interviews: initialInterviews, apiBaseUrl }: Ca
         onUpdateStage={handleUpdateStage}
         onToggleStar={handleToggleStar}
         onSaveNotes={handleSaveNotes}
+        onOpenWhatsApp={(cand) =>
+          setWhatsAppCandidate({
+            candidateId: cand.candidateId,
+            roleLevel: cand.roleLevel,
+            finalScore: cand.finalScore,
+            keyStrengths: cand.keyStrengths,
+          })
+        }
       />
 
       {/* Head-to-Head Candidate Comparison Modal */}
@@ -779,6 +804,13 @@ export function CandidateTable({ interviews: initialInterviews, apiBaseUrl }: Ca
         candidate={emailCandidate}
         isOpen={emailCandidate !== null}
         onClose={() => setEmailCandidate(null)}
+      />
+
+      {/* 1-Click WhatsApp Quick Notification Modal */}
+      <WhatsAppNotificationModal
+        candidate={whatsAppCandidate}
+        isOpen={whatsAppCandidate !== null}
+        onClose={() => setWhatsAppCandidate(null)}
       />
     </div>
   );

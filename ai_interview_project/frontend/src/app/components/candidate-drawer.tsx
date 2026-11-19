@@ -15,7 +15,10 @@ import {
   MessageSquare,
   Activity,
   Layers,
+  HelpCircle,
+  Phone,
 } from "lucide-react";
+import { TechLeadCheatSheet } from "./tech-lead-cheat-sheet";
 
 export type DrawerCandidateData = {
   id: string;
@@ -44,6 +47,7 @@ type CandidateDrawerProps = {
   onUpdateStage?: (candidateId: string, newStage: string) => void;
   onToggleStar?: (candidateId: string) => void;
   onSaveNotes?: (candidateId: string, notes: string) => void;
+  onOpenWhatsApp?: (candidate: DrawerCandidateData) => void;
 };
 
 const STAGES = [
@@ -62,7 +66,9 @@ export function CandidateDrawer({
   onUpdateStage,
   onToggleStar,
   onSaveNotes,
+  onOpenWhatsApp,
 }: CandidateDrawerProps) {
+  const [activeTab, setActiveTab] = useState<"SNAPSHOT" | "TECH_LEAD">("SNAPSHOT");
   const [notes, setNotes] = useState(candidate?.recruiterNotes || "");
   const [savedNotesFeedback, setSavedNotesFeedback] = useState(false);
 
@@ -119,6 +125,15 @@ export function CandidateDrawer({
             </div>
 
             <div className="flex items-center gap-2">
+              {onOpenWhatsApp && (
+                <button
+                  onClick={() => onOpenWhatsApp(candidate)}
+                  className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/80 transition-colors"
+                  title="Hubungi via WhatsApp"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={handlePrint}
                 className="p-2 rounded-xl text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -135,8 +150,34 @@ export function CandidateDrawer({
             </div>
           </div>
 
+          {/* Drawer Navigation Tabs */}
+          <div className="flex gap-2 p-1.5 px-6 bg-gray-100/80 dark:bg-gray-800/60 border-b border-gray-200/60 dark:border-gray-800 text-xs font-semibold shrink-0">
+            <button
+              onClick={() => setActiveTab("SNAPSHOT")}
+              className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === "SNAPSHOT"
+                  ? "bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Ringkasan AI & Metrik
+            </button>
+            <button
+              onClick={() => setActiveTab("TECH_LEAD")}
+              className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === "TECH_LEAD"
+                  ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              Panduan Tanya Tech Lead
+            </button>
+          </div>
+
           {/* ATS Pipeline Stage Selector */}
-          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
+          <div className="px-6 py-2.5 bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs shrink-0">
             <span className="font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-brand-500" />
               Tahapan Rekrutmen (ATS):
@@ -156,139 +197,151 @@ export function CandidateDrawer({
 
           {/* Drawer Body - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Executive Score Card */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-500/10 via-indigo-500/5 to-purple-500/10 border border-brand-200/60 dark:border-brand-500/20">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">
-                    AI Composite Assessment Score
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span
-                      className={`text-4xl font-black ${
-                        scorePct >= 80 ? "text-emerald-600" : scorePct >= 70 ? "text-amber-600" : "text-rose-600"
-                      }`}
-                    >
-                      {scorePct}%
-                    </span>
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                      {scorePct >= 80 ? "🟢 Sangat Direkomendasikan" : scorePct >= 70 ? "🟡 Perlu Diskusi Lanjut" : "🔴 Di Bawah Standar"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <span className="text-xs font-semibold text-gray-400 block">Skor Verbal</span>
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">{verbalPct}%</span>
-                </div>
-              </div>
-
-              {/* Acoustic Metrics Grid */}
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-brand-200/40 dark:border-brand-500/20 text-xs">
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60">
-                  <span className="text-[11px] text-gray-400 block mb-0.5">Tempo Bicara (Speech Pace)</span>
-                  <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-brand-500" />
-                    {wpmVal} WPM
-                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.2 rounded">
-                      Optimal
-                    </span>
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60">
-                  <span className="text-[11px] text-gray-400 block mb-0.5">Rasio Kata Jeda (Fillers)</span>
-                  <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    {fillerVal}%
-                    <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.2 rounded">
-                      Lugas
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Top Key Strengths */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                3 Kelebihan Utama (Key Strengths)
-              </h3>
-              <div className="space-y-2">
-                {(candidate.keyStrengths && candidate.keyStrengths.length > 0
-                  ? candidate.keyStrengths
-                  : [
-                      "Menguasai arsitektur komponen React modular dan pemisahan logika custom hooks.",
-                      "Penyampaian terstruktur dengan tempo bicara stabil di zona optimal (135 WPM).",
-                      "Minim kata ragu ('ehm', 'anu') dengan artikulasi percaya diri.",
-                    ]
-                ).map((s, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-500/5 border border-emerald-200/50 dark:border-emerald-800/50 flex items-start gap-2.5 text-xs text-gray-800 dark:text-gray-200"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{s}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 1 Area to Probe / Follow-up */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                Area Klarifikasi untuk Sesi User Interview
-              </h3>
-              <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-gray-800 dark:text-gray-200">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">
-                  {candidate.growthAreas && candidate.growthAreas.length > 0
-                    ? candidate.growthAreas[0]
-                    : "Klarifikasi lebih lanjut terkait strategi automated testing (Jest, React Testing Library) dan penanganan edge-case pada data fetching."}
-                </span>
-              </div>
-            </div>
-
-            {/* Recruiter Internal Notes */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-brand-500" />
-                  Catatan Internal Rekruter (Private HR Notes)
-                </h3>
-                {savedNotesFeedback && (
-                  <span className="text-[11px] font-semibold text-emerald-600">✓ Catatan tersimpan!</span>
-                )}
-              </div>
-              <textarea
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Tuliskan catatan khusus untuk Hiring Manager / Tech Lead (e.g. ekspektasi gaji, ketersediaan mulai bekerja, catatan teknis)..."
-                className="w-full p-3 text-xs rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            {activeTab === "TECH_LEAD" ? (
+              <TechLeadCheatSheet
+                candidateId={candidate.candidateId}
+                roleLevel={candidate.roleLevel}
+                finalScore={candidate.finalScore}
+                keyStrengths={candidate.keyStrengths}
+                growthAreas={candidate.growthAreas}
               />
-              <button
-                onClick={handleSaveNotes}
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors"
-              >
-                <Save className="w-3.5 h-3.5" />
-                Simpan Catatan
-              </button>
-            </div>
+            ) : (
+              <>
+                {/* Executive Score Card */}
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-500/10 via-indigo-500/5 to-purple-500/10 border border-brand-200/60 dark:border-brand-500/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <span className="text-[11px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">
+                        AI Composite Assessment Score
+                      </span>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        <span
+                          className={`text-4xl font-black ${
+                            scorePct >= 80 ? "text-emerald-600" : scorePct >= 70 ? "text-amber-600" : "text-rose-600"
+                          }`}
+                        >
+                          {scorePct}%
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          {scorePct >= 80 ? "🟢 Sangat Direkomendasikan" : scorePct >= 70 ? "🟡 Perlu Diskusi Lanjut" : "🔴 Di Bawah Standar"}
+                        </span>
+                      </div>
+                    </div>
 
-            {/* Transcript Snippet / Full */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-gray-500" />
-                Transkrip Lengkap Audio (Whisper STT)
-              </h3>
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 text-xs font-mono text-gray-700 dark:text-gray-300 max-h-48 overflow-y-auto leading-relaxed">
-                {candidate.transcript ||
-                  "Transkrip lengkap sesi wawancara tersimpan di database. Sistem mendeteksi pemaparan arsitektur React, Next.js App Router, SSR vs CSR, dan manajemen state."}
-              </div>
-            </div>
+                    <div className="text-right">
+                      <span className="text-xs font-semibold text-gray-400 block">Skor Verbal</span>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">{verbalPct}%</span>
+                    </div>
+                  </div>
+
+                  {/* Acoustic Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-brand-200/40 dark:border-brand-500/20 text-xs">
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60">
+                      <span className="text-[11px] text-gray-400 block mb-0.5">Tempo Bicara (Speech Pace)</span>
+                      <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5 text-brand-500" />
+                        {wpmVal} WPM
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.2 rounded">
+                          Optimal
+                        </span>
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/60">
+                      <span className="text-[11px] text-gray-400 block mb-0.5">Rasio Kata Jeda (Fillers)</span>
+                      <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        {fillerVal}%
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.2 rounded">
+                          Lugas
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3 Top Key Strengths */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                    3 Kelebihan Utama (Key Strengths)
+                  </h3>
+                  <div className="space-y-2">
+                    {(candidate.keyStrengths && candidate.keyStrengths.length > 0
+                      ? candidate.keyStrengths
+                      : [
+                          "Menguasai arsitektur komponen React modular dan pemisahan logika custom hooks.",
+                          "Penyampaian terstruktur dengan tempo bicara stabil di zona optimal (135 WPM).",
+                          "Minim kata ragu ('ehm', 'anu') dengan artikulasi percaya diri.",
+                        ]
+                    ).map((s, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-500/5 border border-emerald-200/50 dark:border-emerald-800/50 flex items-start gap-2.5 text-xs text-gray-800 dark:text-gray-200"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 1 Area to Probe / Follow-up */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2.5 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                    Area Klarifikasi untuk Sesi User Interview
+                  </h3>
+                  <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-gray-800 dark:text-gray-200">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">
+                      {candidate.growthAreas && candidate.growthAreas.length > 0
+                        ? candidate.growthAreas[0]
+                        : "Klarifikasi lebih lanjut terkait strategi automated testing (Jest, React Testing Library) dan penanganan edge-case pada data fetching."}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Recruiter Internal Notes */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-brand-500" />
+                      Catatan Internal Rekruter (Private HR Notes)
+                    </h3>
+                    {savedNotesFeedback && (
+                      <span className="text-[11px] font-semibold text-emerald-600">✓ Catatan tersimpan!</span>
+                    )}
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Tuliskan catatan khusus untuk Hiring Manager / Tech Lead (e.g. ekspektasi gaji, ketersediaan mulai bekerja, catatan teknis)..."
+                    className="w-full p-3 text-xs rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  <button
+                    onClick={handleSaveNotes}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-colors"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Simpan Catatan
+                  </button>
+                </div>
+
+                {/* Transcript Snippet / Full */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-gray-500" />
+                    Transkrip Lengkap Audio (Whisper STT)
+                  </h3>
+                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 text-xs font-mono text-gray-700 dark:text-gray-300 max-h-48 overflow-y-auto leading-relaxed">
+                    {candidate.transcript ||
+                      "Transkrip lengkap sesi wawancara tersimpan di database. Sistem mendeteksi pemaparan arsitektur React, Next.js App Router, SSR vs CSR, dan manajemen state."}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Drawer Footer */}
@@ -305,3 +358,5 @@ export function CandidateDrawer({
     </div>
   );
 }
+
+
