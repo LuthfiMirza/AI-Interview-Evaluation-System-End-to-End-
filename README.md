@@ -41,7 +41,7 @@ Presents high-level hiring metrics, average verbal scores, speech pace (WPM), ca
 ![Next.js Executive Overview](docs/images/nextjs-dashboard-overview.png)
 
 #### B. Video Assessment Studio
-Interactive ingestion panel allowing recruiters to select target qualification levels (Junior, Mid, Senior Frontend Engineer) with automated rubric concept mapping, video drag-and-drop, and real-time processing status.
+Interactive ingestion panel offering dual modes: **Single Candidate Assessment** and **Bulk Video Upload Queue Mode** (multi-file drag-and-drop supporting 2–20 videos with per-file progress tracking, role-level selection, and automatic pipeline queueing).
 
 ![Next.js Video Assessment Studio](docs/images/nextjs-video-assessment.png)
 
@@ -55,8 +55,8 @@ Transparent metric breakdown illustrating acoustic pacing benchmarks (110–165 
 
 ![Next.js Speech and NLP Analytics](docs/images/nextjs-nlp-analytics.png)
 
-#### E. Candidate Directory & Database
-Structured candidate directory backed by PostgreSQL and Prisma ORM, offering status filtering, score breakdowns, AI summaries, and audit histories.
+#### E. Candidate Directory & Mini-ATS Workspace
+Full recruitment operating table featuring **smart multi-sorting** (Score, WPM, Date, Name), **granular filtering** (Passing Grade ≥80%, Borderlines, Levels), **1-click shortlist starring (⭐)**, **interactive ATS stage selector**, **floating bulk action bar**, **side-by-side head-to-head comparison**, **AI executive snapshot drawer**, **1-click WhatsApp notification**, **Tech Lead interview cheat-sheet generator**, and **UTF-8 Excel export**.
 
 ![Next.js Candidate Directory](docs/images/nextjs-candidate-directory.png)
 
