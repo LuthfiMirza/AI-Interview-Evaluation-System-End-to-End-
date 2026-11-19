@@ -470,7 +470,7 @@ export function CandidateTable({ interviews: initialInterviews, apiBaseUrl }: Ca
                   : "bg-gray-100 dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50"
               }`}
             >
-              🟢 Lolos $\ge 80\%$ ({counts.pass})
+              🟢 Lolos ≥ 80% ({counts.pass})
             </button>
 
             <button
