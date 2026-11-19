@@ -47,8 +47,28 @@ class Base(DeclarativeBase):
 
 
 def init_db() -> None:
-    """Create database tables if they do not already exist."""
+    """Create database tables if they do not already exist, and ensure schema migrations."""
     Base.metadata.create_all(bind=engine)
+    if "sqlite" in str(engine.url):
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            try:
+                res = conn.execute(text("PRAGMA table_info(Interview)"))
+                cols = [row[1] for row in res.fetchall()]
+                missing = [
+                    ("stage", "TEXT DEFAULT 'INBOX'"),
+                    ("isStarred", "BOOLEAN DEFAULT 0"),
+                    ("recruiterNotes", "TEXT"),
+                    ("roleLevel", "TEXT DEFAULT 'MID'"),
+                    ("keyStrengths", "JSON"),
+                    ("growthAreas", "JSON"),
+                ]
+                for col_name, col_type in missing:
+                    if col_name not in cols:
+                        conn.execute(text(f"ALTER TABLE Interview ADD COLUMN {col_name} {col_type}"))
+                conn.commit()
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.warning("SQLite auto-migration warning: %s", exc)
     LOGGER.info("Database schema ensured on %s", url.render_as_string(hide_password=True))
 
 
