@@ -18,6 +18,7 @@ import {
   X,
   Layers,
   Activity,
+  MessageSquare,
 } from "lucide-react";
 import { FloatingBulkBar } from "./floating-bulk-bar";
 import { CandidateDrawer, DrawerCandidateData } from "./candidate-drawer";
