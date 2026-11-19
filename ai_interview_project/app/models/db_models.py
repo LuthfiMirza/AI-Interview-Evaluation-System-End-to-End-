@@ -34,6 +34,12 @@ class InterviewRecord(Base):
     finalScore: Mapped[Optional[float]] = mapped_column(Float)
     confidence: Mapped[Optional[float]] = mapped_column(Float)
     summary: Mapped[Optional[str]] = mapped_column(Text)
+    stage: Mapped[str] = mapped_column(String, default="INBOX", nullable=False)
+    isStarred: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    recruiterNotes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    roleLevel: Mapped[str] = mapped_column(String, default="MID", nullable=False)
+    keyStrengths: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    growthAreas: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     transcript: Mapped["TranscriptRecord"] = relationship(
         "TranscriptRecord",

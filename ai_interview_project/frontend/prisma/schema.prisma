@@ -21,6 +21,12 @@ model Interview {
   finalScore     Float?
   confidence     Float?
   summary        String?
+  stage          String   @default("INBOX")
+  isStarred      Boolean  @default(false)
+  recruiterNotes String?
+  roleLevel      String   @default("MID")
+  keyStrengths   Json?
+  growthAreas    Json?
 
   transcript     Transcript?
   nlp            NLPScore?
